@@ -1,10 +1,11 @@
 """MEMORIA por cliente en SQLite. Genérica: no cambia entre retos.
 La conversación pertenece al CLIENTE, no al canal -> base de la continuidad omnicanal."""
 import json
+import os
 import sqlite3
 from datetime import datetime
 
-DB = "agente.db"
+DB = os.getenv("AGENTE_DB", "agente.db")   # los tests usan otra BD
 
 
 def _con():
