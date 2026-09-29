@@ -1,0 +1,132 @@
+# 🤖 Agente de Atención Omnicanal
+
+Asistente de IA para atención al cliente que **entiende, consulta, resuelve y recuerda**, sin importar el canal por el que llegue el cliente.
+
+> *"Tu cliente nunca vuelve a empezar de cero. Escribe por la web, sigue por WhatsApp, y el agente sabe exactamente dónde quedaron."*
+
+---
+
+## ✨ Qué hace
+
+| Capacidad | Descripción |
+|---|---|
+| 🧠 **Agente con herramientas** | Decide qué consultar, encadena varias acciones y responde con datos reales |
+| 📚 **RAG multilingüe** | Responde con base en documentos oficiales (búsqueda por significado, en español) |
+| 🛡️ **No inventa** | Si la información no está en los documentos, lo dice y ofrece un asesor humano |
+| ✅ **Resuelve, no solo responde** | Ejecuta acciones reales (por ejemplo, bloquear una tarjeta) y entrega un número de radicado |
+| 🔐 **Verificación en 2 pasos** | Las acciones sensibles exigen un código OTP. La regla la impone el **código**, no el modelo |
+| 💾 **Memoria por cliente** | La conversación pertenece al cliente, no a la sesión: sobrevive a cierres y reinicios |
+| 🔀 **Continuidad entre canales** | Web, voz o WhatsApp usan la misma API y el mismo historial |
+| ♻️ **Resiliencia** | Reintentos automáticos y modelo de respaldo si el proveedor de IA se satura |
+| 🖥️ **Panel del supervisor** | Clientes, mensajes y último canal usado, en tiempo real |
+
+---
+
+## 🏗️ Arquitectura
+
+```
+ 🌐 Web (Streamlit) ──┐
+ 🎤 Voz ──────────────┼──► API /chat (FastAPI) ──► MOTOR del agente ──► LLM
+ 💬 WhatsApp ─────────┘            │                  │
+                                   │                  ├──► Herramientas del DOMINIO
+                                   │                  └──► RAG (ChromaDB)
+                                   ▼
+                        MEMORIA por cliente (SQLite)
+                        + SEGURIDAD (OTP)
+```
+
+**Principio de diseño: motor genérico + dominio intercambiable.**
+El motor, la memoria, la seguridad y la API **no cambian**. Para un negocio nuevo (banco, salud, telecomunicaciones) solo se escribe un archivo `dominio_X.py` con instrucciones, herramientas y datos.
+
+---
+
+## 📁 Estructura
+
+| Archivo | Rol | ¿Cambia por dominio? |
+|---|---|---|
+| `llm.py` | Conexión al modelo, control de cuota, reintentos y respaldo | No |
+| `motor.py` | Loop del agente e inyección segura de contexto | No |
+| `memoria.py` | Clientes y conversaciones en SQLite | No |
+| `seguridad.py` | Verificación OTP y decorador `@requiere_verificacion` | No |
+| `rag.py` | Búsqueda semántica con umbral anti-invención | No |
+| `api.py` | API REST para todos los canales | No |
+| `d9.py` | Interfaz web + panel del supervisor | No |
+| `d7.py` | Carga de documentos al archivador y evaluación de precisión | Sí (documentos) |
+| `dominio_buses.py` | Dominio de ejemplo: transporte urbano | **Sí** |
+| `d1.py` … `d8.py` | Prácticas de aprendizaje paso a paso | — |
+
+---
+
+## 🚀 Instalación
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
+cp .env.example .env        # y pon tu API key
+```
+
+## ▶️ Ejecución
+
+```bash
+python d7.py                                        # 1) cargar documentos (una vez)
+streamlit run d9.py --server.address 127.0.0.1      # 2) interfaz web
+uvicorn api:app --reload --host 127.0.0.1           # 3) API -> http://127.0.0.1:8000/docs
+```
+
+---
+
+## 🔌 API
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/health` | Estado del servicio |
+| `POST` | `/clientes` | Registrar cliente |
+| `GET` | `/clientes` | Listar clientes (panel) |
+| `GET` | `/clientes/{cedula}/historial` | Conversación de un cliente |
+| `POST` | `/chat` | `{cedula, mensaje, canal}` → respuesta del agente |
+
+**Ejemplo de continuidad entre canales:**
+
+```bash
+curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" \
+  -d '{"cedula":"1234567","mensaje":"¿Puedo llevar a mi perro?","canal":"web"}'
+
+curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" \
+  -d '{"cedula":"1234567","mensaje":"¿De qué estábamos hablando?","canal":"whatsapp"}'
+# -> "Estábamos hablando sobre las políticas para viajar con tu perro..."
+```
+
+---
+
+## 🔐 Seguridad
+
+- La identidad del cliente viene **de la sesión** y el motor la inyecta en las herramientas. El modelo **nunca** puede elegir otra cédula.
+- Las herramientas sensibles llevan `@requiere_verificacion`: si no hay verificación vigente, **se niegan**, diga lo que diga el modelo.
+- Código OTP de 6 dígitos que vence en 5 min, con máximo 3 intentos, guardado **cifrado** (SHA-256) y de un solo uso.
+
+## 📊 Calidad del RAG
+
+`d7.py` evalúa la precisión del buscador:
+
+| Configuración | Precisión |
+|---|---|
+| Modelo por defecto (inglés) + distancia euclidiana | 20 % |
+| **Modelo multilingüe + distancia coseno + título en el texto** | **100 %** |
+
+---
+
+## 🗺️ Próximos pasos
+
+- [ ] Detección de emoción y escalamiento a un humano con resumen automático
+- [ ] Aviso automático por WhatsApp cuando se corta una llamada
+- [ ] Canal de voz
+- [ ] Tests automáticos (pytest)
+- [ ] Despliegue en Azure
+
+---
+
+## 🛠️ Stack
+
+Python · OpenAI SDK (API compatible) · FastAPI · Streamlit · ChromaDB · Sentence-Transformers · SQLite · Pydantic

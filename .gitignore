@@ -1,0 +1,16 @@
+# Secretos
+.env
+
+# Entorno y caché
+.venv/
+__pycache__/
+*.pyc
+
+# Datos locales
+agente.db
+chroma_db/
+
+# Herramientas locales
+.agents/
+.claude/
+.vscode/
