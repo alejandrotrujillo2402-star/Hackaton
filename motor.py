@@ -1,5 +1,6 @@
 """MOTOR del agente: genérico, NO cambia entre retos."""
 import inspect
+import re
 import json
 from llm import llamar
 
@@ -30,6 +31,13 @@ def _ejecutar(tc, funciones: dict, contexto: dict) -> dict:
         return {"error": str(e)}
 
 
+def limpiar(texto: str | None) -> str:
+    """Quita restos internos del modelo (ej: 'seethought', <thought>...</thought>)."""
+    texto = re.sub(r"<thought>.*?</thought>", "", texto or "", flags=re.S)
+    texto = re.sub(r"^\s*(see)?thought\b[:\s]*", "", texto, flags=re.I)
+    return texto.strip()
+
+
 def correr_agente(messages: list, tools: list, funciones: dict, contexto: dict | None = None, max_pasos: int = 6):
     """Loop de agente. Modifica `messages`. Devuelve (texto, pasos).
     `contexto` (ej: {"cedula": ...}) viene de la sesión y solo lo ven las herramientas."""
@@ -39,8 +47,9 @@ def correr_agente(messages: list, tools: list, funciones: dict, contexto: dict |
         msg = llamar(messages=messages, tools=tools).choices[0].message
 
         if not msg.tool_calls:
-            messages.append({"role": "assistant", "content": msg.content})
-            return msg.content, pasos
+            texto = limpiar(msg.content)
+            messages.append({"role": "assistant", "content": texto})
+            return texto, pasos
 
         messages.append(msg.model_dump(exclude_none=True))
         for tc in msg.tool_calls:

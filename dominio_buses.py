@@ -5,6 +5,7 @@ from datetime import datetime
 from motor import tool
 from rag import buscar_documentos
 import memoria
+import escalamiento
 from seguridad import (generar_otp, enviar_sms_simulado, validar_otp,
                        requiere_verificacion)
 
@@ -81,6 +82,7 @@ def bloquear_tarjeta(motivo: str, ctx: dict) -> dict:
 
 
 FUNCIONES = {
+    "escalar_a_humano": escalamiento.escalar_a_humano,
     "solicitar_codigo": solicitar_codigo,
     "verificar_codigo": verificar_codigo,
     "saldo_tarjeta": saldo_tarjeta,
@@ -93,6 +95,7 @@ FUNCIONES = {
 
 S = {"type": "string"}
 TOOLS = [
+    escalamiento.TOOL,
     tool("solicitar_codigo", "Envía un código de verificación de 6 dígitos por SMS al celular del cliente."),
     tool("verificar_codigo", "Verifica el código de 6 dígitos que el cliente recibió por SMS.",
          {"codigo": S}, ["codigo"]),
@@ -121,4 +124,5 @@ SYSTEM = {"role": "system", "content": (
     "pide al cliente el código de 6 dígitos que le llegó por SMS y luego usa verificar_codigo. "
     "Después reintenta la acción. Nunca inventes ni repitas códigos.\n"
     "- Al bloquear una tarjeta, confirma el motivo con el cliente y entrégale el número de radicado."
+    + escalamiento.INSTRUCCIONES
 )}

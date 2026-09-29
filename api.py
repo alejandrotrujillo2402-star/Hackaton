@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 import memoria
+import escalamiento
 from motor import correr_agente
 import dominio_buses as dominio   # <- el día del reto: import dominio_X as dominio
 
@@ -46,6 +47,11 @@ def crear_cliente(c: ClienteIn):
 @app.get("/clientes")
 def listar_clientes():
     return memoria.listar_clientes()
+
+
+@app.get("/escalamientos")
+def escalamientos_pendientes():
+    return escalamiento.listar_escalamientos()
 
 
 @app.get("/clientes/{cedula}/historial")

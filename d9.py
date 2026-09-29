@@ -1,6 +1,7 @@
 import streamlit as st
 import memoria
 import seguridad
+import escalamiento
 from motor import correr_agente
 import dominio_buses as dominio   # <- el día del reto: import dominio_X as dominio
 
@@ -41,6 +42,16 @@ with st.sidebar:
         st.dataframe(clientes, hide_index=True, use_container_width=True)
     else:
         st.caption("Aún no hay clientes.")
+    st.subheader("🚨 Escalamientos pendientes")
+    ICONO = {"calmado": "🙂", "confundido": "😕", "frustrado": "😤", "enojado": "😡"}
+    esc = escalamiento.listar_escalamientos()
+    if not esc:
+        st.caption("Ninguno 🎉")
+    for e in esc:
+        with st.expander(f"{ICONO[e['emocion']]} {e['ticket']} · {e['nombre']} · urgencia {e['urgencia']}/5"):
+            st.write(f"**Motivo:** {e['motivo']}")
+            st.write(f"**Resumen:** {e['resumen']}")
+            st.write(f"**Pendiente:** {e['pendiente']}")
 
 # ---------- Entrada: identificar al cliente ----------
 if "cliente" not in st.session_state:

@@ -150,3 +150,21 @@ def test_historial_reconstruye_chat():
     chat = memoria.a_chat(memoria.cargar_historial("4445556"))
     assert [c[0] for c in chat] == ["user", "assistant"]
     assert "proximo_bus" in chat[1][2][0]
+
+
+# ---------- ESCALAMIENTO ----------
+import escalamiento
+
+
+def test_escalamiento_se_registra(cliente):
+    args = {"motivo": "Cobro doble", "emocion": "enojado", "urgencia": 4,
+            "resumen": "El cliente reporta dos cobros en su tarjeta hoy.", "pendiente": "Revisar y reembolsar"}
+    r = motor._ejecutar(tool_call("escalar_a_humano", args), dominio.FUNCIONES, cliente)
+    assert r["escalado"] and r["ticket"].startswith("ESC-")
+    assert any(e["ticket"] == r["ticket"] and e["emocion"] == "enojado" for e in escalamiento.listar_escalamientos())
+
+
+def test_escalamiento_valida_datos(cliente):
+    args = {"motivo": "x" * 5, "emocion": "feliz", "urgencia": 9, "resumen": "corto", "pendiente": "algo"}
+    r = motor._ejecutar(tool_call("escalar_a_humano", args), dominio.FUNCIONES, cliente)
+    assert "error" in r
