@@ -3,14 +3,15 @@ from dotenv import load_dotenv
 from openai import OpenAI, RateLimitError, InternalServerError, APIConnectionError
 
 load_dotenv()
-TOKEN = os.getenv("GEMINI_API_KEY")
-MODEL = "gemini-3.5-flash"        # <- deja el que te está funcionando
+TOKEN = os.getenv("LLM_API_KEY") or os.getenv("GEMINI_API_KEY")
+BASE_URL = os.getenv("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
+MODEL = os.getenv("LLM_MODEL", "gemini-3.8-flash")
 MODEL_RESPALDO = None             # <- otro modelo de tu lista, ej: "gemini-3.6-flash"
 assert TOKEN, "No se encontró GEMINI_API_KEY en .env"
 
-client = OpenAI(base_url="https://generativelanguage.googleapis.com/v1beta/openai/", api_key=TOKEN)
+client = OpenAI(base_url=BASE_URL, api_key=TOKEN)
 
-INTERVALO = 12.5
+INTERVALO = 1
 _ultima = 0.0
 
 def _turno():
