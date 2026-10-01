@@ -57,6 +57,11 @@
   .tools { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center;
            font-size:.72rem; color:var(--sub); }
   .tag { font-family:ui-monospace,monospace; border:1px solid var(--line); border-radius:6px; padding:2px 6px; }
+  #encuesta { display:none; margin-top:16px; padding:16px; border:1px solid var(--line); border-radius:12px; text-align:center; }
+  #encuesta p { margin:0 0 12px; font-size:.9rem; color:var(--sub); }
+  .notas { display:flex; gap:8px; justify-content:center; }
+  .notas button { flex:0 0 44px; height:44px; background:#1f2330; border:1px solid var(--line); font-weight:600; }
+  .notas button:hover { background:var(--acc); border-color:var(--acc); }
   #aviso { color:#f87171; font-size:.85rem; margin-top:8px; min-height:1em; }
 </style>
 </head>
@@ -84,6 +89,14 @@
   </div>
   <button id="senal">Simular pérdida de señal</button>
   <div id="aviso"></div>
+
+  <div id="encuesta">
+    <p>¿Cómo calificarías la atención recibida?</p>
+    <div class="notas">
+      <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button>
+      <button data-n="4">4</button><button data-n="5">5</button>
+    </div>
+  </div>
 
   <div class="centro">
     <div class="orbe">
@@ -231,6 +244,8 @@ window.addEventListener("pagehide", () => {
 
 function colgar() {
   if (llamadaId) fetch(`/llamadas/${llamadaId}/finalizar?motivo=colgo`, { method: "POST" });
+  $("encuesta").style.display = "block";
+  $("encuesta").querySelector("p").textContent = "¿Cómo calificarías la atención recibida?";
   detenerLlamada();
   if (rec) rec.abort();
   speechSynthesis.cancel();
@@ -245,6 +260,12 @@ function colgar() {
 $("llamar").onclick = llamar;
 $("colgar").onclick = colgar;
 $("senal").onclick = perderSenal;
+document.querySelectorAll(".notas button").forEach(b => b.onclick = async () => {
+  await fetch("/encuestas", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cedula: $("cedula").value.trim(), canal: "voz", puntaje: +b.dataset.n }) });
+  $("encuesta").querySelector("p").textContent = "Gracias por tu calificación.";
+  setTimeout(() => { $("encuesta").style.display = "none"; }, 1500);
+});
 $("enviar").onclick = () => { enviar($("texto").value); $("texto").value = ""; };
 $("texto").onkeydown = e => { if (e.key === "Enter") $("enviar").click(); };
 speechSynthesis.getVoices();

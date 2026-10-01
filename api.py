@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 import memoria
 import escalamiento
 import continuidad
+import metricas
 from motor import correr_agente
 import dominio_buses as dominio   # <- el día del reto: import dominio_X as dominio
 
@@ -23,7 +24,7 @@ CARPETA = Path(__file__).parent
 
 # ---------- Vigilante de llamadas cortadas (hilo en segundo plano) ----------
 def _vigilar():
-    print("[vigilante] activo: revisando llamadas cada 5 s")
+    print("[vigilante] activo: revisando llamadas cada 2 s")
     while True:
         try:
             for llamada_id in continuidad.revisar_cortes():
@@ -62,6 +63,12 @@ class ChatOut(BaseModel):
     canal: str
 
 
+class EncuestaIn(BaseModel):
+    cedula: str = Field(pattern=r"^\d{5,12}$")
+    canal: Literal["web", "voz", "whatsapp"]
+    puntaje: int = Field(ge=1, le=5)
+
+
 class LlamadaIn(BaseModel):
     cedula: str = Field(pattern=r"^\d{5,12}$")
 
@@ -86,6 +93,11 @@ def pagina_voz():
     return (CARPETA / "voz.html").read_text(encoding="utf-8")
 
 
+@app.get("/panel", response_class=HTMLResponse, include_in_schema=False)
+def pagina_panel():
+    return (CARPETA / "panel.html").read_text(encoding="utf-8")
+
+
 @app.get("/whatsapp", response_class=HTMLResponse, include_in_schema=False)
 def pagina_whatsapp():
     return (CARPETA / "whatsapp.html").read_text(encoding="utf-8")
@@ -105,6 +117,17 @@ def crear_cliente(c: ClienteIn):
 @app.get("/clientes")
 def listar_clientes():
     return memoria.listar_clientes()
+
+
+@app.get("/metricas")
+def ver_metricas():
+    return metricas.calcular()
+
+
+@app.post("/encuestas", status_code=201)
+def crear_encuesta(e: EncuestaIn):
+    metricas.registrar_encuesta(e.cedula, e.canal, e.puntaje)
+    return {"ok": True}
 
 
 @app.get("/escalamientos")

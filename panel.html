@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de operación</title>
+<style>
+  :root { --bg:#0b0d12; --card:#14171f; --line:#262a35; --txt:#e7e9ee; --sub:#8b919d;
+          --ok:#16a34a; --bad:#dc2626; --acc:#4f46e5; --warn:#d97706; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Inter","Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--txt); padding:28px; }
+  .wrap { max-width:1180px; margin:0 auto; }
+  header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; }
+  h1 { margin:0; font-size:1.4rem; font-weight:600; } .sub { color:var(--sub); font-size:.85rem; margin-top:4px; }
+  .vivo { display:flex; align-items:center; gap:8px; font-size:.8rem; color:var(--sub); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--ok); animation:b 2s infinite; }
+  @keyframes b { 50% { opacity:.3; } }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; }
+  .kpi { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .kpi .t { font-size:.75rem; color:var(--sub); text-transform:uppercase; letter-spacing:.05em; }
+  .kpi .v { font-size:1.9rem; font-weight:600; margin-top:8px; font-variant-numeric:tabular-nums; }
+  .kpi .d { font-size:.75rem; color:var(--sub); margin-top:4px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .box h2 { margin:0 0 14px; font-size:.95rem; font-weight:600; }
+  .barra { margin-bottom:12px; } .barra .et { display:flex; justify-content:space-between; font-size:.82rem; margin-bottom:5px; }
+  .barra .fondo { height:8px; background:#1f2330; border-radius:4px; overflow:hidden; }
+  .barra .lleno { height:100%; border-radius:4px; transition:width .5s; }
+  table { width:100%; border-collapse:collapse; font-size:.82rem; }
+  th { text-align:left; color:var(--sub); font-weight:500; padding:8px 6px; border-bottom:1px solid var(--line); }
+  td { padding:9px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .chip { display:inline-block; padding:2px 8px; border-radius:6px; font-size:.72rem; border:1px solid var(--line); }
+  .u4, .u5 { color:#f87171; border-color:#7f1d1d; } .u3 { color:#fbbf24; border-color:#78350f; }
+  .vacio { color:var(--sub); font-size:.85rem; }
+  .ancho { grid-column:1 / -1; }
+  @media (max-width:800px) { .grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Panel de operación</h1><div class="sub">Indicadores del agente en tiempo real</div></div>
+    <div class="vivo"><span class="dot"></span><span id="hora">Actualizando</span></div>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="t">Resolución autónoma</div><div class="v" id="k_res">-</div><div class="d">Sin intervención humana</div></div>
+    <div class="kpi"><div class="t">Escalamiento</div><div class="v" id="k_esc">-</div><div class="d">Casos derivados a asesor</div></div>
+    <div class="kpi"><div class="t">AHT</div><div class="v" id="k_aht">-</div><div class="d">Tiempo medio de gestión</div></div>
+    <div class="kpi"><div class="t">CSAT</div><div class="v" id="k_csat">-</div><div class="d" id="k_enc">Calificaciones 4 y 5</div></div>
+    <div class="kpi"><div class="t">Acciones resueltas</div><div class="v" id="k_acc">-</div><div class="d">Radicados y tickets</div></div>
+    <div class="kpi"><div class="t">Continuidad</div><div class="v" id="k_cont">-</div><div class="d">Llamadas cortadas retomadas</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="box"><h2>Interacciones por canal</h2><div id="canales"></div></div>
+    <div class="box"><h2>Emoción en casos escalados</h2><div id="emociones"></div></div>
+    <div class="box ancho">
+      <h2>Escalamientos pendientes</h2>
+      <table><thead><tr><th>Ticket</th><th>Cliente</th><th>Urgencia</th><th>Emoción</th><th>Resumen</th><th>Pendiente</th></tr></thead>
+      <tbody id="tabla"></tbody></table>
+    </div>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = v => v === null || v === undefined ? "-" : v + "%";
+const COLORES = { web:"#4f46e5", voz:"#16a34a", whatsapp:"#00a884",
+                  calmado:"#16a34a", confundido:"#d97706", frustrado:"#ea580c", enojado:"#dc2626" };
+const NOMBRES = { web:"Web", voz:"Voz", whatsapp:"WhatsApp" };
+
+function barras(id, datos) {
+  const total = Object.values(datos).reduce((a, b) => a + b, 0);
+  if (!total) { $(id).innerHTML = '<div class="vacio">Sin datos todavía</div>'; return; }
+  $(id).innerHTML = Object.entries(datos).sort((a, b) => b[1] - a[1]).map(([k, v]) => `
+    <div class="barra"><div class="et"><span>${NOMBRES[k] || k[0].toUpperCase() + k.slice(1)}</span><span>${v} · ${Math.round(100 * v / total)}%</span></div>
+    <div class="fondo"><div class="lleno" style="width:${100 * v / total}%;background:${COLORES[k] || "#4f46e5"}"></div></div></div>`).join("");
+}
+
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+async function actualizar() {
+  const [m, e] = await Promise.all([fetch("/metricas").then(r => r.json()), fetch("/escalamientos").then(r => r.json())]);
+  $("k_res").textContent = fmt(m.resolucion_autonoma_pct);
+  $("k_esc").textContent = fmt(m.escalamiento_pct);
+  $("k_aht").textContent = m.aht_segundos === null ? "-" :
+    String(Math.floor(m.aht_segundos / 60)).padStart(2, "0") + ":" + String(m.aht_segundos % 60).padStart(2, "0");
+  $("k_csat").textContent = fmt(m.csat_pct);
+  $("k_enc").textContent = `Calificaciones 4 y 5 (${m.encuestas} encuestas)`;
+  $("k_acc").textContent = m.acciones_resueltas;
+  $("k_cont").textContent = `${m.llamadas.recuperadas}/${m.llamadas.cortadas}`;
+  barras("canales", m.canales);
+  barras("emociones", m.emociones);
+  $("tabla").innerHTML = e.length ? e.map(x => `<tr>
+      <td><span class="chip">${esc(x.ticket)}</span></td><td>${esc(x.nombre || x.cedula)}</td>
+      <td><span class="chip u${x.urgencia}">${x.urgencia}/5</span></td><td>${esc(x.emocion)}</td>
+      <td>${esc(x.resumen)}</td><td>${esc(x.pendiente)}</td></tr>`).join("")
+    : '<tr><td colspan="6" class="vacio">Sin casos pendientes</td></tr>';
+  $("hora").textContent = "Actualizado " + new Date().toTimeString().slice(0, 8);
+}
+actualizar(); setInterval(actualizar, 5000);
+</script>
+</body>
+</html>
