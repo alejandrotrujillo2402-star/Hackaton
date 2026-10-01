@@ -27,18 +27,25 @@ def calcular() -> dict:
         encuestas = [f["puntaje"] for f in c.execute("SELECT puntaje FROM encuestas")]
         llamadas = c.execute("SELECT cedula, estado, fin FROM llamadas").fetchall()
 
-    # Conversación = mensajes de un mismo cliente en un mismo día
+    # Conversación = mensajes de un cliente sin pausas de más de 30 min
     conv: dict[tuple, list[str]] = {}
+    sesion: dict[str, tuple] = {}
     canales, acciones = Counter(), 0
     for m in mensajes:
-        clave = (m["cedula"], m["creado"][:10])
-        conv.setdefault(clave, []).append(m["creado"])
+        t = datetime.fromisoformat(m["creado"])
+        ult = sesion.get(m["cedula"])
+        if not ult or (t - datetime.fromisoformat(conv[ult][-1])).total_seconds() > 1800:
+            sesion[m["cedula"]] = (m["cedula"], m["creado"])
+        conv.setdefault(sesion[m["cedula"]], []).append(m["creado"])
         if m["rol"] == "user":
             canales[m["canal"]] += 1
         if m["rol"] == "tool" and any(k in m["datos"] for k in ("radicado", "ticket")):
             acciones += 1
 
-    escaladas = {(e["cedula"], e["creado"][:10]) for e in escal}
+    def _sesion_de(cedula, creado):
+        cands = [k for k, ts in conv.items() if k[0] == cedula and ts[0] <= creado]
+        return max(cands, key=lambda k: k[1]) if cands else None
+    escaladas = {s for e in escal if (s := _sesion_de(e["cedula"], e["creado"]))}
     total = len(conv)
     duraciones = [
         (datetime.fromisoformat(max(t)) - datetime.fromisoformat(min(t))).total_seconds()
