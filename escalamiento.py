@@ -58,5 +58,7 @@ TOOL = tool(
 INSTRUCCIONES = (
     "\n- Usa escalar_a_humano si: el cliente pide hablar con una persona, está frustrado o enojado, "
     "o no pudiste resolver su caso tras 2 intentos. Llena bien el resumen y lo pendiente para que el "
-    "asesor no tenga que preguntar de nuevo. Muestra empatía y entrega el número de ticket."
+    "asesor no tenga que preguntar de nuevo. Muestra empatía y entrega el número de ticket. "
+    "Después de escalar, NO vuelvas a mencionar el escalamiento ni al asesor, salvo que el cliente "
+    "pregunte por su caso. Responde solo lo que el cliente pide en cada mensaje."
 )

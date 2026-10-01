@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atención telefónica</title>
+<style>
+  :root {
+    --bg:#0b0d12; --card:#14171f; --line:#262a35; --txt:#e7e9ee; --sub:#8b919d;
+    --ok:#16a34a; --bad:#dc2626; --acc:#4f46e5; --warn:#d97706;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Inter","Segoe UI",system-ui,sans-serif; background:var(--bg);
+         color:var(--txt); display:flex; justify-content:center; padding:32px 16px; }
+  .card { width:100%; max-width:520px; background:var(--card); border:1px solid var(--line);
+          border-radius:16px; padding:28px; }
+  .top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
+  h1 { margin:0; font-size:1.25rem; font-weight:600; letter-spacing:-.01em; }
+  .sub { margin:4px 0 0; color:var(--sub); font-size:.875rem; }
+  .pill { display:flex; align-items:center; gap:8px; font-size:.8rem; color:var(--sub);
+          border:1px solid var(--line); border-radius:999px; padding:6px 12px; white-space:nowrap; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#4b5563; }
+  .en-llamada .dot { background:var(--ok); }
+  label { font-size:.8rem; color:var(--sub); display:block; margin-bottom:6px; }
+  input { width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line);
+          background:var(--bg); color:var(--txt); font-size:.95rem; outline:none; }
+  input:focus { border-color:var(--acc); }
+  input:disabled { opacity:.6; background:var(--bg); color:var(--txt); }
+  input:-webkit-autofill { -webkit-box-shadow:0 0 0 40px var(--bg) inset; -webkit-text-fill-color:var(--txt); }
+  #senal { display:none; margin-top:10px; width:100%; background:transparent; border:1px solid var(--line);
+           color:var(--sub); font-weight:500; font-size:.85rem; padding:10px; }
+  #senal:hover { border-color:var(--warn); color:var(--warn); }
+  .sin-senal .orbe { background:#3f1d1d; border-color:var(--bad); }
+  .fila { display:flex; gap:10px; margin-top:12px; }
+  button { display:flex; align-items:center; justify-content:center; gap:8px; flex:1; padding:12px;
+           border:0; border-radius:10px; font-size:.95rem; font-weight:600; cursor:pointer; color:#fff; }
+  button svg { width:18px; height:18px; }
+  #llamar { background:var(--ok); } #colgar { background:var(--bad); display:none; }
+  #colgar svg { transform:rotate(135deg); }
+  #enviar { background:var(--acc); flex:0 0 52px; }
+  .centro { display:flex; flex-direction:column; align-items:center; margin:28px 0 8px; }
+  .orbe { width:84px; height:84px; border-radius:50%; display:grid; place-items:center;
+          background:#1f2330; border:1px solid var(--line); transition:.3s; }
+  .orbe svg { width:32px; height:32px; color:var(--sub); }
+  .escuchando .orbe { background:var(--ok); border-color:var(--ok); animation:p 1.4s infinite; }
+  .pensando  .orbe { background:var(--warn); border-color:var(--warn); animation:p .8s infinite; }
+  .hablando  .orbe { background:var(--acc); border-color:var(--acc); animation:p 1s infinite; }
+  .escuchando .orbe svg, .pensando .orbe svg, .hablando .orbe svg { color:#fff; }
+  @keyframes p { 0%{box-shadow:0 0 0 0 rgba(255,255,255,.25)} 100%{box-shadow:0 0 0 22px rgba(255,255,255,0)} }
+  #estado { margin-top:14px; font-size:.95rem; color:var(--sub); }
+  #tiempo { font-variant-numeric:tabular-nums; }
+  #log { margin-top:20px; max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+  .msg { padding:10px 14px; border-radius:12px; max-width:85%; line-height:1.45; font-size:.92rem; }
+  .yo { align-self:flex-end; background:#232a3d; }
+  .ia { align-self:flex-start; background:#1b1f2a; border:1px solid var(--line); }
+  .error { color:#f87171; }
+  .tools { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center;
+           font-size:.72rem; color:var(--sub); }
+  .tag { font-family:ui-monospace,monospace; border:1px solid var(--line); border-radius:6px; padding:2px 6px; }
+  #aviso { color:#f87171; font-size:.85rem; margin-top:8px; min-height:1em; }
+</style>
+</head>
+<body>
+<div class="card" id="app">
+  <div class="top">
+    <div>
+      <h1>Atención telefónica</h1>
+      <p class="sub">Asistente virtual con voz en tiempo real</p>
+    </div>
+    <div class="pill"><span class="dot"></span><span id="tiempo">Disponible</span></div>
+  </div>
+
+  <label for="cedula">Número de cédula</label>
+  <input id="cedula" placeholder="Ej: 1234567" inputmode="numeric">
+  <div class="fila">
+    <button id="llamar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      Iniciar llamada
+    </button>
+    <button id="colgar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      Finalizar
+    </button>
+  </div>
+  <button id="senal">Simular pérdida de señal</button>
+  <div id="aviso"></div>
+
+  <div class="centro">
+    <div class="orbe">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+    </div>
+    <div id="estado">Listo para iniciar</div>
+  </div>
+
+  <div id="log"></div>
+
+  <div class="fila">
+    <input id="texto" placeholder="Escribir un mensaje">
+    <button id="enviar" title="Enviar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const $ = id => document.getElementById(id);
+let senalPerdida = false, rec = null, enLlamada = false, ocupado = false, inicio = 0, reloj = null, llamadaId = null, latidos = null;
+
+function estado(clase, texto) {
+  $("app").className = "card " + clase + (enLlamada ? " en-llamada" : "");
+  $("estado").textContent = texto;
+}
+
+function cronometro() {
+  const s = Math.floor((Date.now() - inicio) / 1000);
+  $("tiempo").textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+}
+
+function agregar(quien, texto, herramientas = [], error = false) {
+  const d = document.createElement("div");
+  d.className = "msg " + quien + (error ? " error" : "");
+  d.textContent = texto;
+  const nombres = herramientas.map(h => (h.match(/([a-z_]+)\(/) || [])[1]).filter(Boolean);
+  if (nombres.length) {
+    const t = document.createElement("div");
+    t.className = "tools";
+    t.append("Consultas:");
+    nombres.forEach(n => { const s = document.createElement("span"); s.className = "tag"; s.textContent = n; t.append(s); });
+    d.appendChild(t);
+  }
+  $("log").appendChild(d);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+function hablar(texto, alTerminar) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(texto.replace(/[*_#`>|]/g, ""));
+  u.lang = "es-CO";
+  const voz = speechSynthesis.getVoices().find(v => v.lang.startsWith("es"));
+  if (voz) u.voice = voz;
+  u.rate = 1.05;
+  u.onend = alTerminar;
+  estado("hablando", "Respondiendo");
+  speechSynthesis.speak(u);
+}
+
+function escuchar() {
+  if (!enLlamada || !rec || ocupado) return;
+  estado("escuchando", "Escuchando");
+  try { rec.start(); } catch (e) {}
+}
+
+async function enviar(texto) {
+  if (!texto.trim() || ocupado) return;
+  ocupado = true;
+  agregar("yo", texto);
+  estado("pensando", "Procesando solicitud");
+  try {
+    const r = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cedula: $("cedula").value.trim(), mensaje: texto, canal: "voz" }),
+    });
+    const data = await r.json();
+    if (senalPerdida) { ocupado = false; return; }   // la llamada ya se cortó: no se entrega
+    if (!r.ok) throw new Error(data.detail?.[0]?.msg || data.detail || "Error del servidor");
+    agregar("ia", data.respuesta, data.herramientas);
+    ocupado = false;
+    if (enLlamada) hablar(data.respuesta, escuchar); else estado("", "Listo");
+  } catch (e) {
+    ocupado = false;
+    if (senalPerdida) return;
+    agregar("ia", "No fue posible procesar la solicitud. " + e.message, [], true);
+    if (enLlamada) hablar("Tuve un problema técnico. ¿Puedes repetirlo?", escuchar); else estado("", "Listo");
+  }
+}
+
+async function llamar() {
+  senalPerdida = false;
+  $("aviso").textContent = "";
+  const ced = $("cedula").value.trim();
+  const r = await fetch(`/clientes/${ced}/historial`);
+  if (!r.ok) { $("aviso").textContent = "Cédula no registrada."; return; }
+  const ll = await fetch("/llamadas", { method: "POST", headers: { "Content-Type": "application/json" },
+                                       body: JSON.stringify({ cedula: ced }) });
+  llamadaId = (await ll.json()).id;
+  latidos = setInterval(() => fetch(`/llamadas/${llamadaId}/latido`, { method: "POST" }), 4000);
+  $("senal").style.display = "block";
+  enLlamada = true;
+  inicio = Date.now(); cronometro(); reloj = setInterval(cronometro, 1000);
+  $("llamar").style.display = "none";
+  $("colgar").style.display = "flex";
+  $("cedula").disabled = true;
+  if (Rec) {
+    rec = new Rec();
+    rec.lang = "es-CO";
+    rec.interimResults = false;
+    rec.onresult = e => enviar(e.results[0][0].transcript);
+    rec.onend = () => { if (enLlamada && !ocupado && !speechSynthesis.speaking) escuchar(); };
+    rec.onerror = e => { if (e.error === "not-allowed") $("aviso").textContent = "Permite el acceso al micrófono en el navegador."; };
+  } else {
+    $("aviso").textContent = "Este navegador no soporta reconocimiento de voz. Usa Chrome o escribe el mensaje.";
+  }
+  hablar("Hola, soy tu asistente virtual. ¿En qué te puedo ayudar?", escuchar);
+}
+
+function detenerLlamada() {
+  enLlamada = false;
+  clearInterval(latidos);
+  $("senal").style.display = "none";
+}
+
+function perderSenal() {
+  senalPerdida = true;
+  // Simula que el celular se quedó sin señal: deja de latir SIN avisar al servidor.
+  detenerLlamada();
+  if (rec) rec.abort();
+  speechSynthesis.cancel();
+  clearInterval(reloj);
+  $("tiempo").textContent = "Sin señal";
+  estado("sin-senal", "Señal perdida. El sistema lo detectará en unos segundos.");
+  $("llamar").style.display = "flex";
+  $("colgar").style.display = "none";
+  $("cedula").disabled = false;
+}
+
+window.addEventListener("pagehide", () => {
+  if (enLlamada && llamadaId) navigator.sendBeacon(`/llamadas/${llamadaId}/finalizar?motivo=cortada`);
+});
+
+function colgar() {
+  if (llamadaId) fetch(`/llamadas/${llamadaId}/finalizar?motivo=colgo`, { method: "POST" });
+  detenerLlamada();
+  if (rec) rec.abort();
+  speechSynthesis.cancel();
+  clearInterval(reloj);
+  $("tiempo").textContent = "Disponible";
+  estado("", "Llamada finalizada");
+  $("llamar").style.display = "flex";
+  $("colgar").style.display = "none";
+  $("cedula").disabled = false;
+}
+
+$("llamar").onclick = llamar;
+$("colgar").onclick = colgar;
+$("senal").onclick = perderSenal;
+$("enviar").onclick = () => { enviar($("texto").value); $("texto").value = ""; };
+$("texto").onkeydown = e => { if (e.key === "Enter") $("enviar").click(); };
+speechSynthesis.getVoices();
+</script>
+</body>
+</html>
