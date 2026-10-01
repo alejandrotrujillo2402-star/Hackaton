@@ -71,3 +71,34 @@ def requiere_verificacion(func):
                     "mensaje": "El cliente debe verificar su identidad con un código antes de esta acción."}
         return func(*args, ctx=ctx, **kwargs)
     return envoltura
+
+
+# ---------- Herramientas genéricas de verificación (cualquier dominio las reutiliza) ----------
+def solicitar_codigo(ctx: dict) -> dict:
+    import memoria
+    cliente = memoria.obtener_cliente(ctx["cedula"]) or {}
+    tel = cliente.get("telefono")
+    enviar_sms_simulado(ctx["cedula"], tel, generar_otp(ctx["cedula"]))
+    return {"enviado": True, "destino": f"celular terminado en {tel[-4:]}" if tel else "tu celular registrado"}
+
+
+def verificar_codigo(codigo: str, ctx: dict) -> dict:
+    return validar_otp(ctx["cedula"], codigo)
+
+
+def herramientas_verificacion():
+    from motor import tool
+    funciones = {"solicitar_codigo": solicitar_codigo, "verificar_codigo": verificar_codigo}
+    tools = [
+        tool("solicitar_codigo", "Envía un código de verificación de 6 dígitos por SMS al celular del cliente."),
+        tool("verificar_codigo", "Verifica el código de 6 dígitos que el cliente recibió por SMS.",
+             {"codigo": {"type": "string"}}, ["codigo"]),
+    ]
+    return funciones, tools
+
+
+INSTRUCCIONES_VERIFICACION = (
+    "\n- Si una herramienta responde VERIFICACION_REQUERIDA, usa solicitar_codigo, pide al cliente el código "
+    "de 6 dígitos que le llegó por SMS y luego usa verificar_codigo. Después reintenta la acción. "
+    "Nunca inventes ni repitas códigos."
+)

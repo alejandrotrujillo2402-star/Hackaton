@@ -17,7 +17,9 @@ import escalamiento
 import continuidad
 import metricas
 from motor import correr_agente
-import dominio_buses as dominio   # <- el día del reto: import dominio_X as dominio
+import importlib
+import os
+dominio = importlib.import_module(os.getenv("DOMINIO", "dominio_buses"))   # se elige en el .env
 
 CARPETA = Path(__file__).parent
 

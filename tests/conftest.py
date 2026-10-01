@@ -8,4 +8,5 @@ os.environ["GEMINI_API_KEY"] = "clave-falsa-para-tests"
 # RAG falso: evita cargar el modelo de embeddings
 rag_falso = types.ModuleType("rag")
 rag_falso.buscar_documentos = lambda consulta, k=2: {"encontrado": False, "mensaje": "test"}
+rag_falso.buscador = lambda nombre: rag_falso.buscar_documentos
 sys.modules["rag"] = rag_falso

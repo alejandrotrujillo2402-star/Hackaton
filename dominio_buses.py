@@ -3,13 +3,14 @@ import secrets
 import unicodedata
 from datetime import datetime
 from motor import tool
-from rag import buscar_documentos
+import rag
 import memoria
 import escalamiento
 from seguridad import (generar_otp, enviar_sms_simulado, validar_otp,
                        requiere_verificacion)
 
-NOMBRE = "🚌 Agente de Buses Manizales"
+NOMBRE = "Agente de Buses Manizales"
+COLECCION = "faq_buses_multi"
 
 # ---------- Datos falsos ----------
 RUTAS = {
@@ -90,7 +91,7 @@ FUNCIONES = {
     "buscar_rutas": buscar_rutas,
     "consultar_ruta": consultar_ruta,
     "proximo_bus": proximo_bus,
-    "buscar_documentos": buscar_documentos,
+    "buscar_documentos": rag.buscador(COLECCION),
 }
 
 S = {"type": "string"}
@@ -126,3 +127,30 @@ SYSTEM = {"role": "system", "content": (
     "- Al bloquear una tarjeta, confirma el motivo con el cliente y entrégale el número de radicado."
     + escalamiento.INSTRUCCIONES
 )}
+
+
+# ---------- Documentos del RAG (se cargan con: python cargar_documentos.py dominio_buses) ----------
+DOCUMENTOS = [
+    ("tarifas", "Tarifas", "El pasaje urbano cuesta 3.200 pesos. Estudiantes con carné vigente pagan 2.500. "
+     "Adultos mayores de 62 años pagan 2.000 presentando la cédula."),
+    ("tarjeta", "Tarjeta de transporte", "La tarjeta se compra en la Terminal y en puntos autorizados por 5.000 pesos. "
+     "Se recarga en tiendas, cajeros y por la app. Si se pierde, se bloquea llamando a la línea 01 8000."),
+    ("objetos", "Objetos olvidados", "Los objetos olvidados en los buses se guardan 30 días en la oficina de la Terminal, "
+     "segundo piso. Para reclamarlos hay que describir el objeto, la ruta y la hora aproximada."),
+    ("mascotas", "Mascotas", "Se permiten mascotas pequeñas dentro de guacal o bolso cerrado. "
+     "Los perros guía pueden viajar sin restricción. Mascotas grandes sin guacal no pueden abordar."),
+    ("pqr", "Peticiones, quejas y reclamos", "Las PQR se radican en la web, en la app o en la Terminal. "
+     "La empresa responde máximo en 15 días hábiles. Cada PQR recibe un número de radicado."),
+    ("horarios", "Horarios de servicio", "El servicio urbano opera de 5:00 a.m. a 10:00 p.m. de lunes a sábado, "
+     "y de 6:00 a.m. a 9:00 p.m. domingos y festivos."),
+    ("accesibilidad", "Accesibilidad", "Los buses articulados tienen rampa para sillas de ruedas y "
+     "sillas preferenciales para embarazadas, adultos mayores y personas con discapacidad."),
+]
+
+PRUEBAS_RAG = [
+    ("Dejé mi maleta en el bus, ¿qué hago?", "objetos"),
+    ("¿Puedo subir con mi perro?", "mascotas"),
+    ("¿Cuánto me cuesta si soy universitario?", "tarifas"),
+    ("Quiero poner una queja", "pqr"),
+    ("¿A qué hora pasa el último bus un domingo?", "horarios"),
+]

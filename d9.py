@@ -3,7 +3,9 @@ import memoria
 import seguridad
 import escalamiento
 from motor import correr_agente
-import dominio_buses as dominio   # <- el día del reto: import dominio_X as dominio
+import importlib
+import os
+dominio = importlib.import_module(os.getenv("DOMINIO", "dominio_buses"))   # se elige en el .env
 
 st.set_page_config(page_title=dominio.NOMBRE, page_icon="🤖")
 st.title(dominio.NOMBRE)
