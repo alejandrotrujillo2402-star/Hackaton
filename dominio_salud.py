@@ -128,25 +128,25 @@ DOCUMENTOS = [
     ("cuotas", "Cuotas moderadoras y copagos",
      "La cuota moderadora se paga en consultas y exámenes y depende del ingreso del cotizante: categoría A 4.700, "
      "B 18.700 y C 49.300 pesos. Los beneficiarios pagan copago en hospitalizaciones y cirugías. "
-     "Las urgencias vitales y los controles prenatales no pagan cuota moderadora."),
+     "Las urgencias vitales y los controles prenatales no pagan cuota moderadora. Preguntas frecuentes: cuánto pago por una consulta, cuánto cuesta una cita, valor del copago, cuánto debo pagar."),
     ("urgencias", "Urgencias",
      "En una emergencia vital llama al 123 o acude a cualquier servicio de urgencias del país, aunque no sea de la "
-     "red de Salud Vital; no se requiere autorización previa. Para síntomas leves usa la línea de orientación médica 24/7."),
+     "red de Salud Vital; no se requiere autorización previa. Para síntomas leves usa la línea de orientación médica 24/7. Preguntas frecuentes: me duele el pecho, no puedo respirar, me siento muy mal, qué hago en una emergencia, a dónde voy si es grave."),
     ("autorizaciones", "Autorizaciones de servicios",
      "Exámenes especializados, cirugías y algunos medicamentos requieren autorización. Se solicita con la orden "
-     "médica por la app o la web. La respuesta tarda máximo 5 días hábiles y la autorización tiene vigencia de 30 días."),
+     "médica por la app o la web. La respuesta tarda máximo 5 días hábiles y la autorización tiene vigencia de 30 días. Preguntas frecuentes: necesito permiso para un examen, resonancia, ecografía, cirugía, cómo pido una autorización, cuánto tarda."),
     ("medicamentos", "Entrega de medicamentos",
      "Los medicamentos formulados se reclaman en las farmacias de la red con la fórmula vigente y el documento. "
-     "Si falta un medicamento, la farmacia debe entregarlo a domicilio en máximo 48 horas."),
+     "Si falta un medicamento, la farmacia debe entregarlo a domicilio en máximo 48 horas. Preguntas frecuentes: no tenían mi medicina, la farmacia no me entregó, dónde reclamo mis medicamentos, me falta un medicamento."),
     ("portabilidad", "Portabilidad",
      "Si vas a estar fuera de tu ciudad más de un mes, solicita la portabilidad en la web para ser atendido en "
-     "otra ciudad. Se aprueba en máximo 10 días hábiles."),
+     "otra ciudad. Se aprueba en máximo 10 días hábiles. Preguntas frecuentes: me voy a vivir a otra ciudad, viajo por varios meses, me mudo temporalmente, atención en otra ciudad."),
     ("pqr", "Peticiones, quejas y reclamos",
      "Las PQR se radican en la web, la app, la línea telefónica o las oficinas. La EPS responde en máximo 15 días "
-     "hábiles. Si no recibes respuesta puedes acudir a la Superintendencia Nacional de Salud."),
+     "hábiles. Si no recibes respuesta puedes acudir a la Superintendencia Nacional de Salud. Preguntas frecuentes: quiero poner una queja, mala atención, reclamo, inconformidad, denuncia."),
     ("red", "Red de atención y horarios",
      "Las sedes de atención básica funcionan de lunes a viernes de 7:00 a.m. a 6:00 p.m. y sábados de 8:00 a.m. a "
-     "12:00 m. Las citas se pueden agendar por la app, la web o con el asistente virtual las 24 horas."),
+     "12:00 m. Las citas se pueden agendar por la app, la web o con el asistente virtual las 24 horas. Preguntas frecuentes: a qué hora abren, horario de atención, sedes, dónde me atienden."),
 ]
 
 PRUEBAS_RAG = [

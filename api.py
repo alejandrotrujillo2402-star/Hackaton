@@ -19,7 +19,7 @@ import metricas
 from motor import correr_agente
 import importlib
 import os
-dominio = importlib.import_module(os.getenv("DOMINIO", "dominio_buses"))   # se elige en el .env
+dominio = importlib.import_module(os.getenv("DOMINIO", "dominio_salud"))   # se elige en el .env
 
 CARPETA = Path(__file__).parent
 
@@ -77,7 +77,7 @@ class LlamadaIn(BaseModel):
 
 INSTRUCCIONES_CANAL = {
     "voz": "\nEstás en una LLAMADA de voz: responde en máximo 2 frases cortas, sin markdown, sin listas "
-           "ni símbolos, como hablaría una persona.",
+           "ni símbolos, como hablaría una persona. Di fechas y horas de forma natural (ej: el viernes 2 de octubre a las 3 de la tarde), nunca en formato 2026-10-02 15:00.",
     "whatsapp": "\nEstás en WhatsApp: mensajes breves y cercanos, sin emojis ni markdown (nada de asteriscos). Si la conversación viene de una "
                 "llamada cortada, continúa justo donde quedó sin pedir que repita.",
     "web": "",

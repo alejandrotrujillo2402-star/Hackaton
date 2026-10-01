@@ -3,8 +3,10 @@ La conversación pertenece al CLIENTE, no al canal -> base de la continuidad omn
 import json
 import os
 import sqlite3
+from dotenv import load_dotenv
 from datetime import datetime
 
+load_dotenv()
 DB = os.getenv("AGENTE_DB", "agente.db")   # los tests usan otra BD
 
 
