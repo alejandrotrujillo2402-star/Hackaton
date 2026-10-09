@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Salud Vital · Atención</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#070b10; --panel:#0d1219; --card:#111822; --line:#1c2532; --line2:#273244;
+    --txt:#e8edf3; --sub:#8a96a8; --mute:#5c6879;
+    --acc:#2dd4bf; --acc-d:#0f766e; --acc-bg:rgba(45,212,191,.08);
+    --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b; --violet:#818cf8;
+    --r:14px;
+  }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:"Manrope",system-ui,sans-serif; background:var(--bg); color:var(--txt); height:100vh; overflow:hidden;
+         background-image:radial-gradient(1200px 600px at 85% -10%, rgba(45,212,191,.07), transparent 60%),
+                          radial-gradient(900px 500px at -10% 110%, rgba(129,140,248,.06), transparent 60%); }
+  svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  button { font:inherit; cursor:pointer; border:0; }
+  input { font:inherit; }
+
+  /* ---------- Acceso ---------- */
+  #acceso { height:100vh; display:grid; place-items:center; padding:24px; }
+  .acceso-card { width:100%; max-width:420px; background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:36px; }
+  .marca { display:flex; align-items:center; gap:12px; margin-bottom:28px; }
+  .logo { width:42px; height:42px; border-radius:12px; display:grid; place-items:center;
+          background:linear-gradient(135deg,var(--acc),#0ea5e9); color:#04221f; }
+  .logo svg { width:22px; height:22px; stroke-width:2.4; }
+  .marca b { display:block; font-size:1.05rem; } .marca span { font-size:.8rem; color:var(--sub); }
+  .acceso-card h2 { font-size:1.45rem; font-weight:700; letter-spacing:-.02em; }
+  .acceso-card p { color:var(--sub); font-size:.9rem; margin:6px 0 24px; line-height:1.5; }
+  label { display:block; font-size:.75rem; color:var(--sub); margin:0 0 6px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; }
+  .campo { width:100%; padding:13px 15px; border-radius:11px; border:1px solid var(--line2); background:var(--bg);
+           color:var(--txt); font-size:.95rem; outline:none; transition:border-color .15s, box-shadow .15s; margin-bottom:14px; }
+  .campo:focus { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-bg); }
+  .btn { width:100%; padding:13px; border-radius:11px; background:var(--acc); color:#04221f; font-weight:700;
+         display:flex; align-items:center; justify-content:center; gap:8px; transition:filter .15s; }
+  .btn:hover { filter:brightness(1.08); }
+  #registro { display:none; padding-top:6px; border-top:1px dashed var(--line2); margin-top:6px; }
+  #registro .nota { font-size:.85rem; color:var(--sub); margin:14px 0; }
+  .error-txt { color:#f87171; font-size:.85rem; min-height:1.2em; margin-top:10px; }
+
+  /* ---------- App ---------- */
+  #app { display:none; height:100vh; grid-template-columns:280px 1fr; grid-template-rows:100vh; overflow:hidden; }
+  aside { overflow-y:auto; min-height:0; background:var(--panel); border-right:1px solid var(--line); padding:22px 18px; display:flex; flex-direction:column; gap:22px; }
+  .cliente { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; display:flex; gap:12px; align-items:center; }
+  .avatar { width:40px; height:40px; border-radius:50%; background:var(--acc-bg); border:1px solid var(--acc-d);
+            color:var(--acc); display:grid; place-items:center; font-weight:700; font-size:.9rem; }
+  .cliente b { display:block; font-size:.95rem; } .cliente span { font-size:.75rem; color:var(--sub); font-family:"JetBrains Mono",monospace; }
+  .seccion { font-size:.7rem; color:var(--mute); font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin:0 6px -12px; }
+  nav { display:flex; flex-direction:column; gap:4px; }
+  .item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; background:transparent;
+          color:var(--sub); font-weight:600; font-size:.9rem; text-align:left; transition:background .15s, color .15s; }
+  .item:hover { background:var(--card); color:var(--txt); }
+  .item.activo { background:var(--acc-bg); color:var(--acc); }
+  .item .externo { margin-left:auto; width:14px; height:14px; opacity:.6; }
+  .pie { margin-top:auto; }
+  .estado-sesion { display:flex; align-items:center; gap:8px; font-size:.78rem; color:var(--sub); padding:0 6px 12px; }
+  .punto { width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 3px rgba(34,197,94,.15); }
+
+  main { display:flex; flex-direction:column; min-width:0; min-height:0; height:100vh; overflow:hidden; }
+  .topbar { height:68px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; padding:0 28px; }
+  .topbar h1 { font-size:1.05rem; font-weight:700; }
+  .topbar .sub { font-size:.78rem; color:var(--sub); margin-top:2px; }
+  .modos { display:flex; background:var(--card); border:1px solid var(--line); border-radius:11px; padding:4px; }
+  .modo { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; background:transparent;
+          color:var(--sub); font-weight:600; font-size:.85rem; }
+  .modo.activo { background:var(--line2); color:var(--txt); }
+
+  /* barra de llamada */
+  #llamada { display:none; border-bottom:1px solid var(--line); padding:22px 28px; align-items:center; gap:24px;
+             background:linear-gradient(180deg, rgba(45,212,191,.04), transparent); }
+  .orbe { width:76px; height:76px; border-radius:50%; display:grid; place-items:center; flex:none;
+          background:var(--card); border:1px solid var(--line2); color:var(--sub); transition:all .3s; }
+  .orbe svg { width:28px; height:28px; }
+  .escuchando .orbe { background:var(--ok); border-color:var(--ok); color:#fff; animation:pulso 1.4s infinite; }
+  .pensando .orbe { background:var(--warn); border-color:var(--warn); color:#fff; animation:pulso .8s infinite; }
+  .hablando .orbe { background:var(--violet); border-color:var(--violet); color:#fff; animation:pulso 1s infinite; }
+  .sin-senal .orbe { background:#3a1414; border-color:var(--bad); color:var(--bad); }
+  @keyframes pulso { 0%{box-shadow:0 0 0 0 rgba(255,255,255,.22)} 100%{box-shadow:0 0 0 20px rgba(255,255,255,0)} }
+  .llamada-info { flex:1; }
+  .llamada-info b { font-size:1rem; display:block; }
+  .llamada-info span { font-size:.85rem; color:var(--sub); }
+  #tiempo { font-family:"JetBrains Mono",monospace; font-size:1.4rem; color:var(--txt); margin-right:8px; }
+  .acciones { display:flex; gap:10px; }
+  .btn-sec { display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; background:var(--card);
+             border:1px solid var(--line2); color:var(--sub); font-weight:600; font-size:.85rem; }
+  .btn-sec:hover { color:var(--warn); border-color:var(--warn); }
+  .btn-colgar { display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px; background:var(--bad);
+                color:#fff; font-weight:700; font-size:.85rem; }
+  .btn-colgar svg { transform:rotate(135deg); }
+  .btn-llamar { display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px; background:var(--ok);
+                color:#fff; font-weight:700; font-size:.85rem; }
+
+  /* conversación */
+  #log { flex:1; min-height:0; overflow-y:auto; padding:28px; display:flex; flex-direction:column; gap:14px; scroll-behavior:smooth; }
+  .vacio { margin:auto; text-align:center; color:var(--sub); max-width:380px; }
+  .vacio .icono { width:56px; height:56px; border-radius:16px; background:var(--card); border:1px solid var(--line);
+                  display:grid; place-items:center; margin:0 auto 16px; color:var(--acc); }
+  .vacio b { color:var(--txt); display:block; margin-bottom:6px; }
+  .sugerencias { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:18px; }
+  .sug { padding:8px 12px; border-radius:999px; background:var(--card); border:1px solid var(--line2); color:var(--sub); font-size:.8rem; }
+  .sug:hover { color:var(--acc); border-color:var(--acc-d); }
+  .fila { display:flex; gap:10px; max-width:78%; animation:entra .25s ease-out; }
+  @keyframes entra { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .fila.user { align-self:flex-end; flex-direction:row-reverse; }
+  .mini { width:30px; height:30px; border-radius:50%; flex:none; display:grid; place-items:center; font-size:.72rem; font-weight:700; }
+  .assistant .mini { background:var(--acc-bg); color:var(--acc); border:1px solid var(--acc-d); }
+  .user .mini { background:var(--line2); color:var(--txt); }
+  .burbuja { padding:12px 15px; border-radius:14px; line-height:1.55; font-size:.92rem; white-space:pre-wrap; }
+  .assistant .burbuja { background:var(--card); border:1px solid var(--line); border-top-left-radius:4px; }
+  .user .burbuja { background:linear-gradient(135deg,#134e4a,#0f3d4a); border-top-right-radius:4px; }
+  .burbuja.error { color:#fca5a5; border-color:#4c1d1d; }
+  .meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; align-items:center; font-size:.7rem; color:var(--mute); }
+  .tag { font-family:"JetBrains Mono",monospace; padding:2px 7px; border-radius:6px; border:1px solid var(--line2); color:var(--sub); }
+  .canal { padding:2px 7px; border-radius:6px; background:rgba(129,140,248,.1); color:var(--violet); font-weight:600; }
+  .escribiendo { display:flex; gap:4px; padding:14px 16px; }
+  .escribiendo i { width:6px; height:6px; border-radius:50%; background:var(--sub); animation:salto 1s infinite; }
+  .escribiendo i:nth-child(2) { animation-delay:.15s; } .escribiendo i:nth-child(3) { animation-delay:.3s; }
+  @keyframes salto { 0%,60%,100% { opacity:.3; transform:none; } 30% { opacity:1; transform:translateY(-3px); } }
+
+  .entrada { padding:18px 28px 24px; }
+  .caja { display:flex; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line2); border-radius:14px;
+          padding:6px 6px 6px 16px; transition:border-color .15s, box-shadow .15s; }
+  .caja:focus-within { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-bg); }
+  .caja input { flex:1; background:transparent; border:0; outline:none; color:var(--txt); font-size:.95rem; padding:8px 0; }
+  .enviar { width:42px; height:42px; border-radius:10px; background:var(--acc); color:#04221f; display:grid; place-items:center; }
+  .enviar:disabled { opacity:.4; cursor:default; }
+  .ayuda { font-size:.72rem; color:var(--mute); margin-top:8px; text-align:center; }
+
+  /* encuesta */
+  #encuesta { position:fixed; inset:0; background:rgba(3,6,10,.7); backdrop-filter:blur(4px); display:none; place-items:center; z-index:10; }
+  .encuesta-card { background:var(--panel); border:1px solid var(--line2); border-radius:20px; padding:30px; text-align:center; width:360px; }
+  .encuesta-card h3 { font-size:1.1rem; margin-bottom:6px; } .encuesta-card p { color:var(--sub); font-size:.88rem; margin-bottom:20px; }
+  .notas { display:flex; gap:8px; justify-content:center; }
+  .notas button { width:48px; height:48px; border-radius:12px; background:var(--card); border:1px solid var(--line2);
+                  color:var(--txt); font-weight:700; font-size:1rem; transition:all .15s; }
+  .notas button:hover { background:var(--acc); color:#04221f; border-color:var(--acc); transform:translateY(-2px); }
+  .omitir { margin-top:16px; background:none; color:var(--mute); font-size:.8rem; }
+
+  @media (max-width:860px) { #app { grid-template-columns:1fr; } aside { display:none; } .fila { max-width:92%; } }
+</style>
+</head>
+<body>
+
+<!-- ================= ACCESO ================= -->
+<section id="acceso">
+  <div class="acceso-card">
+    <div class="marca">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div><b>Salud Vital</b><span>Atención inteligente al afiliado</span></div>
+    </div>
+    <h2>Bienvenido</h2>
+    <p>Ingresa tu número de cédula para continuar tu atención por chat o llamada.</p>
+    <label for="cedula">Número de cédula</label>
+    <input class="campo" id="cedula" placeholder="Ej. 1000000011" inputmode="numeric" autocomplete="off">
+    <button class="btn" id="entrar">Continuar
+      <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+    <div id="registro">
+      <div class="nota">No encontramos esa cédula. Completa tu registro:</div>
+      <label for="nombre">Nombre completo</label>
+      <input class="campo" id="nombre" placeholder="Ej. Laura Gómez" autocomplete="off">
+      <label for="telefono">Celular</label>
+      <input class="campo" id="telefono" placeholder="Ej. 3001234567" inputmode="numeric" autocomplete="off">
+      <button class="btn" id="registrar">Registrarme y continuar</button>
+    </div>
+    <div class="error-txt" id="error"></div>
+  </div>
+</section>
+
+<!-- ================= APLICACIÓN ================= -->
+<section id="app">
+  <aside>
+    <div class="marca" style="margin:0">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div><b>Salud Vital</b><span>Centro de atención</span></div>
+    </div>
+    <div class="cliente">
+      <div class="avatar" id="iniciales">--</div>
+      <div><b id="nombre-cliente">Afiliado</b><span id="cedula-cliente"></span></div>
+    </div>
+
+    <div class="seccion">Atención</div>
+    <nav>
+      <button class="item activo" data-modo="chat">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat</button>
+      <button class="item" data-modo="llamada">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Llamada de voz</button>
+    </nav>
+
+    <div class="seccion">Otros canales</div>
+    <nav>
+      <button class="item" id="abrir-whatsapp">
+        <svg viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>WhatsApp
+        <svg class="externo" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></button>
+      <button class="item" id="abrir-panel">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Panel de operación
+        <svg class="externo" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></button>
+    </nav>
+
+    <div class="pie">
+      <div class="estado-sesion"><span class="punto"></span>Agente en línea</div>
+      <button class="item" id="salir" style="width:100%">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div><h1 id="titulo">Chat con el asistente</h1><div class="sub" id="subtitulo">Escribe tu consulta; recordamos toda tu conversación</div></div>
+      <div class="modos">
+        <button class="modo activo" data-modo="chat"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat</button>
+        <button class="modo" data-modo="llamada"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>Llamada</button>
+      </div>
+    </div>
+
+    <div id="llamada">
+      <div class="orbe"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></div>
+      <div class="llamada-info"><b id="estado-llamada">Listo para llamar</b><span id="detalle-llamada">Habla con naturalidad: el asistente te escucha y responde en voz alta.</span></div>
+      <span id="tiempo"></span>
+      <div class="acciones">
+        <button class="btn-llamar" id="llamar"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Iniciar llamada</button>
+        <button class="btn-sec" id="senal" style="display:none"><svg viewBox="0 0 24 24"><path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.86a10 10 0 0 1 5.17-2.69"/><path d="M12 20h.01"/></svg>Simular pérdida de señal</button>
+        <button class="btn-colgar" id="colgar" style="display:none"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Finalizar</button>
+      </div>
+    </div>
+
+    <div id="log"></div>
+
+    <div class="entrada">
+      <div class="caja">
+        <input id="texto" placeholder="Escribe tu mensaje..." autocomplete="off">
+        <button class="enviar" id="enviar" title="Enviar"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+      </div>
+      <div class="ayuda" id="ayuda">Tus datos están protegidos: las acciones personales requieren un código enviado a tu celular.</div>
+    </div>
+  </main>
+</section>
+
+<!-- ================= ENCUESTA ================= -->
+<div id="encuesta">
+  <div class="encuesta-card">
+    <h3>¿Cómo fue tu atención?</h3>
+    <p>Califica de 1 a 5 la llamada que acabas de terminar.</p>
+    <div class="notas"><button>1</button><button>2</button><button>3</button><button>4</button><button>5</button></div>
+    <button class="omitir" id="omitir">Omitir</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const S = { cedula:"", nombre:"", modo:"chat", ocupado:false, rec:null, enLlamada:false, senalPerdida:false,
+            llamadaId:null, latidos:null, reloj:null, inicio:0 };
+
+/* ---------- Acceso y registro ---------- */
+async function entrar() {
+  $("error").textContent = "";
+  const ced = $("cedula").value.trim();
+  if (!/^\d{5,12}$/.test(ced)) { $("error").textContent = "La cédula debe tener entre 5 y 12 dígitos."; return; }
+  const r = await fetch(`/clientes/${ced}/historial`);
+  if (r.status === 404) { $("registro").style.display = "block"; $("nombre").focus(); return; }
+  if (!r.ok) { $("error").textContent = "No fue posible conectar con el servidor."; return; }
+  const historial = await r.json();
+  const clientes = await fetch("/clientes").then(x => x.json()).catch(() => []);
+  const c = clientes.find(x => x.cedula === ced) || {};
+  abrirApp(ced, c.nombre || "Afiliado", historial);
+}
+
+async function registrar() {
+  $("error").textContent = "";
+  const body = { cedula:$("cedula").value.trim(), nombre:$("nombre").value.trim(), telefono:$("telefono").value.trim() || null };
+  if (!body.nombre) { $("error").textContent = "Escribe tu nombre completo."; return; }
+  const r = await fetch("/clientes", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) });
+  if (!r.ok) { $("error").textContent = "Revisa los datos: la cédula debe tener entre 5 y 12 dígitos."; return; }
+  abrirApp(body.cedula, body.nombre, []);
+}
+
+function abrirApp(cedula, nombre, historial) {
+  S.cedula = cedula; S.nombre = nombre;
+  $("acceso").style.display = "none"; $("app").style.display = "grid";
+  $("nombre-cliente").textContent = nombre;
+  $("cedula-cliente").textContent = "C.C. " + cedula;
+  $("iniciales").textContent = nombre.split(/\s+/).map(p => p[0]).slice(0, 2).join("").toUpperCase();
+  $("log").innerHTML = "";
+  if (historial.length) historial.forEach(m => agregar(m.rol, m.texto, m.herramientas));
+  else vacio();
+  $("texto").focus({ preventScroll:true });
+  window.scrollTo(0, 0);
+}
+
+function vacio() {
+  $("log").innerHTML = `<div class="vacio">
+    <div class="icono"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+    <b>Hola, ${S.nombre.split(" ")[0].replace(/[<>&]/g, "")}. ¿En qué te ayudamos hoy?</b>
+    Puedes agendar citas, consultar autorizaciones o resolver dudas sobre tu plan.
+    <div class="sugerencias">
+      <button class="sug">¿Cuánto pago por una consulta?</button>
+      <button class="sug">Quiero una cita de medicina general</button>
+      <button class="sug">¿Cómo va mi autorización AUT-1002?</button>
+    </div></div>`;
+  document.querySelectorAll(".sug").forEach(b => b.onclick = () => enviar(b.textContent));
+}
+
+/* ---------- Conversación ---------- */
+function agregar(rol, texto, herramientas = [], opciones = {}) {
+  const v = $("log").querySelector(".vacio"); if (v) v.remove();
+  const fila = document.createElement("div"); fila.className = "fila " + rol;
+  const mini = document.createElement("div"); mini.className = "mini";
+  mini.textContent = rol === "user" ? ($("iniciales").textContent || "TU") : "SV";
+  const cont = document.createElement("div");
+  const b = document.createElement("div"); b.className = "burbuja" + (opciones.error ? " error" : "");
+  b.textContent = (texto || "").replace(/\*\*(.+?)\*\*/g, "$1");
+  cont.appendChild(b);
+  const nombres = (herramientas || []).map(h => (h.match(/([a-z_]+)\(/) || [])[1]).filter(Boolean);
+  if (nombres.length || opciones.canal) {
+    const meta = document.createElement("div"); meta.className = "meta";
+    if (opciones.canal) { const c = document.createElement("span"); c.className = "canal"; c.textContent = opciones.canal; meta.append(c); }
+    if (nombres.length) { meta.append("Consultó"); nombres.forEach(n => { const t = document.createElement("span"); t.className = "tag"; t.textContent = n; meta.append(t); }); }
+    cont.appendChild(meta);
+  }
+  fila.append(mini, cont); $("log").appendChild(fila);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+function escribiendo(mostrar) {
+  const e = $("escribiendo");
+  if (!mostrar) { if (e) e.remove(); return; }
+  if (e) return;
+  const f = document.createElement("div"); f.className = "fila assistant"; f.id = "escribiendo";
+  f.innerHTML = '<div class="mini">SV</div><div class="burbuja escribiendo"><i></i><i></i><i></i></div>';
+  $("log").appendChild(f); $("log").scrollTop = $("log").scrollHeight;
+}
+
+async function enviar(texto) {
+  texto = (texto || "").trim();
+  if (!texto || S.ocupado) return;
+  const canal = S.enLlamada ? "voz" : "web";
+  S.ocupado = true; $("enviar").disabled = true; $("texto").value = "";
+  agregar("user", texto, [], { canal: canal === "voz" ? "Voz" : null });
+  escribiendo(true);
+  if (S.enLlamada) estadoLlamada("pensando", "Procesando tu solicitud", "Consultando los sistemas de la EPS.");
+  try {
+    const r = await fetch("/chat", { method:"POST", headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ cedula:S.cedula, mensaje:texto, canal }) });
+    const d = await r.json();
+    escribiendo(false);
+    if (S.senalPerdida) return;                               // la llamada se cortó: no se entrega por voz
+    if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Error del servidor");
+    agregar("assistant", d.respuesta, d.herramientas, { canal: canal === "voz" ? "Voz" : null });
+    if (S.enLlamada) hablar(d.respuesta, escuchar);
+  } catch (e) {
+    escribiendo(false);
+    if (!S.senalPerdida) agregar("assistant", "No fue posible procesar la solicitud. " + e.message, [], { error:true });
+    if (S.enLlamada) hablar("Tuve un problema técnico. ¿Puedes repetirlo?", escuchar);
+  } finally {
+    S.ocupado = false; $("enviar").disabled = false;
+    if (!S.enLlamada) $("texto").focus();
+  }
+}
+
+/* ---------- Modos ---------- */
+function cambiarModo(modo) {
+  S.modo = modo;
+  document.querySelectorAll("[data-modo]").forEach(b => b.classList.toggle("activo", b.dataset.modo === modo));
+  $("llamada").style.display = modo === "llamada" ? "flex" : "none";
+  $("titulo").textContent = modo === "llamada" ? "Llamada con el asistente" : "Chat con el asistente";
+  $("subtitulo").textContent = modo === "llamada"
+    ? "La conversación es la misma: lo que hables por voz queda aquí"
+    : "Escribe tu consulta; recordamos toda tu conversación";
+}
+
+/* ---------- Llamada de voz ---------- */
+function estadoLlamada(clase, titulo, detalle) {
+  $("llamada").className = clase; $("llamada").style.display = "flex";
+  $("estado-llamada").textContent = titulo; $("detalle-llamada").textContent = detalle || "";
+}
+
+function hablar(texto, alTerminar) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(texto.replace(/[*_#`>|]/g, ""));
+  u.lang = "es-CO"; u.rate = 1.05;
+  const voz = speechSynthesis.getVoices().find(v => v.lang.startsWith("es")); if (voz) u.voice = voz;
+  u.onend = alTerminar;
+  estadoLlamada("hablando", "Respondiendo", "El asistente te está hablando.");
+  speechSynthesis.speak(u);
+}
+
+function escuchar() {
+  if (!S.enLlamada || !S.rec || S.ocupado) return;
+  estadoLlamada("escuchando", "Escuchando", "Habla cuando quieras.");
+  try { S.rec.start(); } catch (e) {}
+}
+
+function cronometro() {
+  const s = Math.floor((Date.now() - S.inicio) / 1000);
+  $("tiempo").textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+}
+
+async function llamar() {
+  const ll = await fetch("/llamadas", { method:"POST", headers:{ "Content-Type":"application/json" },
+                                        body:JSON.stringify({ cedula:S.cedula }) });
+  if (!ll.ok) { estadoLlamada("", "No se pudo iniciar la llamada", "Verifica que la API esté activa."); return; }
+  S.llamadaId = (await ll.json()).id;
+  S.latidos = setInterval(() => fetch(`/llamadas/${S.llamadaId}/latido`, { method:"POST" }), 4000);
+  S.enLlamada = true; S.senalPerdida = false;
+  S.inicio = Date.now(); cronometro(); S.reloj = setInterval(cronometro, 1000);
+  $("llamar").style.display = "none"; $("senal").style.display = "flex"; $("colgar").style.display = "flex";
+  $("texto").placeholder = "También puedes escribir durante la llamada...";
+  if (Rec) {
+    S.rec = new Rec(); S.rec.lang = "es-CO"; S.rec.interimResults = false;
+    S.rec.onresult = e => enviar(e.results[0][0].transcript);
+    S.rec.onend = () => { if (S.enLlamada && !S.ocupado && !speechSynthesis.speaking) escuchar(); };
+    S.rec.onerror = e => { if (e.error === "not-allowed") $("detalle-llamada").textContent = "Permite el acceso al micrófono en el navegador."; };
+  }
+  agregar("assistant", "Llamada iniciada.", [], { canal:"Voz" });
+  hablar(`Hola ${S.nombre.split(" ")[0]}, gracias por llamar a Salud Vital. ¿En qué te puedo ayudar?`, escuchar);
+}
+
+function terminarLlamada() {
+  S.enLlamada = false; clearInterval(S.latidos); clearInterval(S.reloj);
+  if (S.rec) S.rec.abort(); speechSynthesis.cancel();
+  $("llamar").style.display = "flex"; $("senal").style.display = "none"; $("colgar").style.display = "none";
+  $("texto").placeholder = "Escribe tu mensaje...";
+}
+
+function colgar() {
+  if (S.llamadaId) fetch(`/llamadas/${S.llamadaId}/finalizar?motivo=colgo`, { method:"POST" });
+  terminarLlamada(); $("tiempo").textContent = "";
+  estadoLlamada("", "Llamada finalizada", "Gracias por comunicarte con Salud Vital.");
+  $("encuesta").style.display = "grid";
+}
+
+function perderSenal() {   // simula un celular sin cobertura: deja de latir sin avisar al servidor
+  S.senalPerdida = true; terminarLlamada(); $("tiempo").textContent = "";
+  estadoLlamada("sin-senal", "Señal perdida", "El sistema lo detectará y te escribirá por WhatsApp para continuar.");
+}
+
+window.addEventListener("pagehide", () => {
+  if (S.enLlamada && S.llamadaId) navigator.sendBeacon(`/llamadas/${S.llamadaId}/finalizar?motivo=cortada`);
+});
+
+/* ---------- Encuesta ---------- */
+document.querySelectorAll(".notas button").forEach(b => b.onclick = async () => {
+  await fetch("/encuestas", { method:"POST", headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ cedula:S.cedula, canal:"voz", puntaje:+b.textContent }) });
+  $("encuesta").querySelector("p").textContent = "Gracias por tu calificación.";
+  setTimeout(() => { $("encuesta").style.display = "none";
+    $("encuesta").querySelector("p").textContent = "Califica de 1 a 5 la llamada que acabas de terminar."; }, 1100);
+});
+$("omitir").onclick = () => { $("encuesta").style.display = "none"; };
+
+/* ---------- Eventos ---------- */
+$("entrar").onclick = entrar;
+$("cedula").onkeydown = e => { if (e.key === "Enter") entrar(); };
+$("registrar").onclick = registrar;
+$("telefono").onkeydown = e => { if (e.key === "Enter") registrar(); };
+$("enviar").onclick = () => enviar($("texto").value);
+$("texto").onkeydown = e => { if (e.key === "Enter") enviar($("texto").value); };
+document.querySelectorAll("[data-modo]").forEach(b => b.onclick = () => cambiarModo(b.dataset.modo));
+$("llamar").onclick = llamar;
+$("colgar").onclick = colgar;
+$("senal").onclick = perderSenal;
+$("abrir-whatsapp").onclick = () => window.open(`/whatsapp?cedula=${S.cedula}`, "whatsapp", "width=430,height=820");
+$("abrir-panel").onclick = () => window.open("/panel", "panel");
+$("salir").onclick = () => { if (S.enLlamada) colgar(); location.reload(); };
+speechSynthesis.getVoices();
+</script>
+</body>
+</html>

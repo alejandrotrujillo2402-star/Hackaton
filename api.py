@@ -91,10 +91,20 @@ INSTRUCCIONES_CANAL = {
 # >> La raíz redirige a la llamada de voz.
 @app.get("/", include_in_schema=False)
 def inicio():
-    return RedirectResponse("/voz")
+    return RedirectResponse("/app")
 
 
 # >> Sirve la página de llamada de voz.
+@app.get("/chat-web", response_class=HTMLResponse, include_in_schema=False)
+def pagina_chat():
+    return (CARPETA / "chat.html").read_text(encoding="utf-8")
+
+
+@app.get("/app", response_class=HTMLResponse, include_in_schema=False)
+def pagina_app():
+    return (CARPETA / "app.html").read_text(encoding="utf-8")
+
+
 @app.get("/voz", response_class=HTMLResponse, include_in_schema=False)
 def pagina_voz():
     return (CARPETA / "voz.html").read_text(encoding="utf-8")
