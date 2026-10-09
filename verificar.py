@@ -41,7 +41,7 @@ def env():
     if not key:
         raise RuntimeError("no hay LLM_API_KEY ni GEMINI_API_KEY en .env")
     return (f"key=...{key[-4:]}  modelo={os.getenv('LLM_MODEL', '(gemini por defecto)')}  "
-            f"dominio={os.getenv('DOMINIO', 'dominio_buses')}  bd={os.getenv('AGENTE_DB', 'agente.db')}")
+            f"dominio={os.getenv('DOMINIO', 'dominio_salud')}  bd={os.getenv('AGENTE_DB', 'agente.db')}")
 
 
 # 3) LLM responde
@@ -67,7 +67,7 @@ def llm_herramientas():
 def dominio():
     from dotenv import load_dotenv
     load_dotenv()
-    d = importlib.import_module(os.getenv("DOMINIO", "dominio_buses"))
+    d = importlib.import_module(os.getenv("DOMINIO", "dominio_salud"))
     return f"{d.NOMBRE}: {len(d.TOOLS)} herramientas"
 
 
@@ -76,7 +76,7 @@ def rag_ok():
     from dotenv import load_dotenv
     load_dotenv()
     import rag
-    d = importlib.import_module(os.getenv("DOMINIO", "dominio_buses"))
+    d = importlib.import_module(os.getenv("DOMINIO", "dominio_salud"))
     buscar = rag.buscador(d.COLECCION)
     pruebas = getattr(d, "PRUEBAS_RAG", [])
     aciertos = 0

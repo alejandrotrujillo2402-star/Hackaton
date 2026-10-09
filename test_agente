@@ -15,6 +15,7 @@ import api
 F = dominio.FUNCIONES
 
 
+# ---------- utilidades: un LLM falso ----------
 def tool_call(nombre, args, id_="t1"):
     return types.SimpleNamespace(id=id_, function=types.SimpleNamespace(name=nombre, arguments=json.dumps(args)))
 
@@ -104,6 +105,7 @@ def test_loop_encadena_herramientas(monkeypatch):
     texto, pasos = motor.correr_agente(msgs, dominio.TOOLS, F)
     assert texto == "Hay horarios mañana"
     assert "consultar_disponibilidad" in pasos[0] and "horarios" in pasos[0]
+    assert msgs[-1]["role"] == "assistant"
 
 
 def test_limite_de_pasos(monkeypatch):
@@ -116,6 +118,7 @@ def test_limite_de_pasos(monkeypatch):
 def test_limpia_restos_internos_del_modelo():
     assert motor.limpiar("seethought Lamento mucho") == "Lamento mucho"
     assert motor.limpiar("<thought>pienso</thought>Hola") == "Hola"
+    assert motor.limpiar("Pensé en tu caso") == "Pensé en tu caso"
 
 
 # ---------- API ----------
@@ -140,11 +143,28 @@ def test_api_continuidad_entre_canales(api_client):
     api_client.post("/chat", json={"cedula": "7778889", "mensaje": "mi cita", "canal": "voz"})
     r = api_client.post("/chat", json={"cedula": "7778889", "mensaje": "¿de qué hablábamos?", "canal": "whatsapp"})
     assert "mi cita" in r.json()["respuesta"]
+    fila = next(c for c in api_client.get("/clientes").json() if c["cedula"] == "7778889")
+    assert fila["ultimo_canal"] == "whatsapp"
 
 
 def test_pagina_de_voz(api_client):
     r = api_client.get("/voz")
     assert r.status_code == 200 and "SpeechRecognition" in r.text
+
+
+# ---------- MEMORIA ----------
+def test_historial_reconstruye_chat():
+    memoria.registrar_cliente("4445556", "Luis")
+    memoria.guardar_mensajes("4445556", [
+        {"role": "user", "content": "hola"},
+        {"role": "assistant", "content": None,
+         "tool_calls": [{"id": "a", "type": "function", "function": {"name": "mis_citas", "arguments": "{}"}}]},
+        {"role": "tool", "tool_call_id": "a", "content": "{}"},
+        {"role": "assistant", "content": "listo"},
+    ])
+    chat = memoria.a_chat(memoria.cargar_historial("4445556"))
+    assert [c[0] for c in chat] == ["user", "assistant"]
+    assert "mis_citas" in chat[1][2][0]
 
 
 # ---------- ESCALAMIENTO ----------
@@ -153,6 +173,7 @@ def test_escalamiento_se_registra(cliente):
             "resumen": "El afiliado no logra cita con ortopedia hace un mes.", "pendiente": "Asignar cita"}
     r = motor._ejecutar(tool_call("escalar_a_humano", args), F, cliente)
     assert r["escalado"] and r["ticket"].startswith("ESC-")
+    assert any(e["ticket"] == r["ticket"] and e["emocion"] == "enojado" for e in escalamiento.listar_escalamientos())
 
 
 def test_escalamiento_valida_datos(cliente):

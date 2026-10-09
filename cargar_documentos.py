@@ -5,7 +5,7 @@ import importlib
 import sys
 import rag
 
-nombre = sys.argv[1] if len(sys.argv) > 1 else "dominio_buses"
+nombre = sys.argv[1] if len(sys.argv) > 1 else "dominio_salud"
 dominio = importlib.import_module(nombre)
 total = rag.cargar(dominio.COLECCION, dominio.DOCUMENTOS)
 print(f"{total} documentos en la colección '{dominio.COLECCION}'\n")
