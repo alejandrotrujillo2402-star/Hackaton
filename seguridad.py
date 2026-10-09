@@ -102,3 +102,8 @@ INSTRUCCIONES_VERIFICACION = (
     "de 6 dígitos que le llegó por SMS y luego usa verificar_codigo. Después reintenta la acción. "
     "Nunca inventes ni repitas códigos."
 )
+
+def cerrar_sesion(cedula: str):
+    """Al terminar la llamada normalmente, la verificación deja de valer."""
+    with _con() as c:
+        c.execute("UPDATE verificaciones SET verificado_hasta = 0 WHERE cedula = ?", (cedula,))

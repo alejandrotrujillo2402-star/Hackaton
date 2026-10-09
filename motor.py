@@ -35,6 +35,7 @@ def limpiar(texto: str | None) -> str:
     """Quita restos internos del modelo (ej: 'seethought', <thought>...</thought>)."""
     texto = re.sub(r"<thought>.*?</thought>", "", texto or "", flags=re.S)
     texto = re.sub(r"^\s*(see)?thought\b[:\s]*", "", texto, flags=re.I)
+    texto = re.sub(r"\.{4,}", ".", texto)
     return texto.strip()
 
 

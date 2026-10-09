@@ -16,6 +16,8 @@ _ultima = 0.0
 
 def _turno():
     global _ultima
+
+    1
     falta = INTERVALO - (time.time() - _ultima)
     if falta > 0:
         time.sleep(falta)

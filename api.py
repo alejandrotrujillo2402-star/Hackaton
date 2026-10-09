@@ -16,6 +16,7 @@ import memoria
 import escalamiento
 import continuidad
 import metricas
+import seguridad
 from motor import correr_agente
 import importlib
 import os
@@ -185,6 +186,8 @@ def latido(llamada_id: int):
 @app.post("/llamadas/{llamada_id}/finalizar")
 def finalizar_llamada(llamada_id: int, motivo: Literal["colgo", "cortada"] = "colgo"):
     cambio = continuidad.finalizar(llamada_id, motivo)
+    if cambio and motivo == "colgo" and (ced := continuidad.cedula_de(llamada_id)):
+        seguridad.cerrar_sesion(ced)   # colgó: la próxima llamada vuelve a pedir código
     aviso = continuidad.manejar_corte(llamada_id) if (cambio and motivo == "cortada") else None
     return {"estado": "completada" if motivo == "colgo" else "cortada",
             "aviso_whatsapp": aviso.model_dump() if aviso else None}

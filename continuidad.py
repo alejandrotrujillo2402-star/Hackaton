@@ -109,3 +109,8 @@ def mensajes_whatsapp(cedula: str) -> list[dict]:
         if m["role"] in ("user", "assistant") and m.get("content"):
             salida.append({"rol": m["role"], "texto": m["content"], "hora": f["creado"][11:16]})
     return salida
+
+def cedula_de(llamada_id: int) -> str | None:
+    with _con() as c:
+        f = c.execute("SELECT cedula FROM llamadas WHERE id = ?", (llamada_id,)).fetchone()
+    return f["cedula"] if f else None
