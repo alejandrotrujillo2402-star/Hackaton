@@ -17,10 +17,12 @@ with _con() as c:
         intentos INTEGER DEFAULT 0, verificado_hasta REAL DEFAULT 0)""")
 
 
+# >> Cifra el código con SHA-256: nunca se guarda en claro.
 def _hash(codigo: str) -> str:
     return hashlib.sha256(codigo.encode()).hexdigest()   # nunca guardamos el código en claro
 
 
+# >> Crea un código de 6 dígitos que vence en 5 minutos.
 def generar_otp(cedula: str) -> str:
     codigo = f"{secrets.randbelow(10**6):06d}"
     with _con() as c:
@@ -32,12 +34,14 @@ def generar_otp(cedula: str) -> str:
     return codigo
 
 
+# >> Simula el envío del SMS (en producción sería un proveedor real).
 def enviar_sms_simulado(cedula: str, telefono: str | None, codigo: str):
     texto = f"Tu código de verificación es {codigo}. Vence en 5 minutos."
     ULTIMOS_SMS[cedula] = texto
     print(f"📱 [SMS SIMULADO a {telefono or 'sin teléfono'}] {texto}")
 
 
+# >> Revisa el código: vencimiento, máximo 3 intentos y un solo uso.
 def validar_otp(cedula: str, codigo: str) -> dict:
     with _con() as c:
         f = c.execute("SELECT * FROM verificaciones WHERE cedula = ?", (cedula,)).fetchone()
@@ -56,12 +60,14 @@ def validar_otp(cedula: str, codigo: str) -> dict:
     return {"ok": True, "mensaje": "Identidad verificada por 30 minutos."}
 
 
+# >> Indica si el cliente sigue verificado (30 minutos).
 def esta_verificado(cedula: str) -> bool:
     with _con() as c:
         f = c.execute("SELECT verificado_hasta FROM verificaciones WHERE cedula = ?", (cedula,)).fetchone()
     return bool(f) and time.time() < f["verificado_hasta"]
 
 
+# >> Decorador: la herramienta se niega sola si no hay verificación. La seguridad la impone el código.
 def requiere_verificacion(func):
     """Decorador: la herramienta se niega si el cliente no está verificado."""
     @functools.wraps(func)
@@ -74,6 +80,7 @@ def requiere_verificacion(func):
 
 
 # ---------- Herramientas genéricas de verificación (cualquier dominio las reutiliza) ----------
+# >> Herramienta: envía el código al celular registrado.
 def solicitar_codigo(ctx: dict) -> dict:
     import memoria
     cliente = memoria.obtener_cliente(ctx["cedula"]) or {}
@@ -82,10 +89,12 @@ def solicitar_codigo(ctx: dict) -> dict:
     return {"enviado": True, "destino": f"celular terminado en {tel[-4:]}" if tel else "tu celular registrado"}
 
 
+# >> Herramienta: valida el código que dicta el cliente.
 def verificar_codigo(codigo: str, ctx: dict) -> dict:
     return validar_otp(ctx["cedula"], codigo)
 
 
+# >> Entrega las herramientas de verificación para que cualquier dominio las reutilice.
 def herramientas_verificacion():
     from motor import tool
     funciones = {"solicitar_codigo": solicitar_codigo, "verificar_codigo": verificar_codigo}
@@ -103,6 +112,7 @@ INSTRUCCIONES_VERIFICACION = (
     "Nunca inventes ni repitas códigos."
 )
 
+# >> Al colgar, la verificación deja de valer: la próxima llamada vuelve a pedir código.
 def cerrar_sesion(cedula: str):
     """Al terminar la llamada normalmente, la verificación deja de valer."""
     with _con() as c:

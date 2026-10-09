@@ -17,6 +17,7 @@ with _con() as c:
 
 
 # ---------- Ciclo de vida de la llamada ----------
+# >> Registra el inicio de una llamada.
 def iniciar(cedula: str) -> int:
     with _con() as c:
         cur = c.execute("INSERT INTO llamadas (cedula, inicio, ultimo_latido) VALUES (?, ?, ?)",
@@ -24,12 +25,14 @@ def iniciar(cedula: str) -> int:
         return cur.lastrowid
 
 
+# >> La página de voz avisa cada 4 s que la llamada sigue viva.
 def latido(llamada_id: int):
     with _con() as c:
         c.execute("UPDATE llamadas SET ultimo_latido = ? WHERE id = ? AND estado = 'activa'",
                   (time.time(), llamada_id))
 
 
+# >> Cierra la llamada como completada (colgó) o cortada (se perdió la señal).
 def finalizar(llamada_id: int, motivo: str) -> bool:
     """motivo: 'colgo' (cierre normal) o 'cortada'. Devuelve True si cambió de estado."""
     estado = "completada" if motivo == "colgo" else "cortada"
@@ -39,6 +42,7 @@ def finalizar(llamada_id: int, motivo: str) -> bool:
         return cur.rowcount == 1
 
 
+# >> Detecta llamadas con más de 10 s sin latido y las marca como cortadas.
 def revisar_cortes() -> list[int]:
     """Llamadas activas sin latido reciente -> se marcan como cortadas."""
     limite = time.time() - TIMEOUT_LATIDO
@@ -55,6 +59,7 @@ class Aviso(BaseModel):
     mensaje: str
 
 
+# >> Arma el texto de lo que se habló en la llamada.
 def _transcripcion(cedula: str, desde: str) -> str:
     with _con() as c:
         filas = c.execute("""SELECT datos FROM mensajes WHERE cedula = ? AND canal = 'voz' AND creado >= ?
@@ -67,6 +72,7 @@ def _transcripcion(cedula: str, desde: str) -> str:
     return "\n".join(lineas)
 
 
+# >> El modelo resume la llamada en JSON validado: resumen, pendiente y mensaje; si falla, usa plantilla.
 def generar_aviso(nombre: str, transcripcion: str) -> Aviso:
     prompt = (
         f"Una llamada de atención al cliente con {nombre} se cortó. Con la transcripción, responde SOLO un JSON "
@@ -84,6 +90,7 @@ def generar_aviso(nombre: str, transcripcion: str) -> Aviso:
                              "justo donde quedamos.")
 
 
+# >> Envía el WhatsApp para continuar justo donde quedó la llamada.
 def manejar_corte(llamada_id: int) -> Aviso | None:
     with _con() as c:
         ll = c.execute("SELECT * FROM llamadas WHERE id = ?", (llamada_id,)).fetchone()
@@ -99,6 +106,7 @@ def manejar_corte(llamada_id: int) -> Aviso | None:
     return aviso
 
 
+# >> Mensajes del canal WhatsApp para la página simulada.
 def mensajes_whatsapp(cedula: str) -> list[dict]:
     with _con() as c:
         filas = c.execute("SELECT datos, creado FROM mensajes WHERE cedula = ? AND canal = 'whatsapp' ORDER BY id",
@@ -110,6 +118,7 @@ def mensajes_whatsapp(cedula: str) -> list[dict]:
             salida.append({"rol": m["role"], "texto": m["content"], "hora": f["creado"][11:16]})
     return salida
 
+# >> Devuelve la cédula asociada a una llamada.
 def cedula_de(llamada_id: int) -> str | None:
     with _con() as c:
         f = c.execute("SELECT cedula FROM llamadas WHERE id = ?", (llamada_id,)).fetchone()

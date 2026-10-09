@@ -21,11 +21,13 @@ AUTORIZACIONES = {
 }
 
 
+# >> Quita tildes y mayúsculas: 'Pediatría' y 'pediatria' valen lo mismo.
 def _norm(t: str) -> str:
     import unicodedata
     return unicodedata.normalize("NFD", t).encode("ascii", "ignore").decode().lower().strip()
 
 
+# >> Agenda posible: próximos 3 días hábiles con 3 franjas cada uno.
 def _horarios() -> list[str]:
     """Próximos 3 días hábiles, 3 franjas por día."""
     dias, d = [], datetime.now()
@@ -37,6 +39,7 @@ def _horarios() -> list[str]:
 
 
 # ---------- Herramientas ----------
+# >> Horarios libres = agenda posible menos citas activas de esa especialidad.
 def consultar_disponibilidad(especialidad: str) -> dict:
     esp = _norm(especialidad)
     if esp not in ESPECIALIDADES:
@@ -45,6 +48,7 @@ def consultar_disponibilidad(especialidad: str) -> dict:
     return {"especialidad": esp, "horarios": [h for h in _horarios() if h not in ocupados]}
 
 
+# >> Requiere verificación. Revisa de nuevo la disponibilidad y agenda; entrega código CITA.
 @requiere_verificacion
 def agendar_cita(especialidad: str, fecha_hora: str, ctx: dict) -> dict:
     disp = consultar_disponibilidad(especialidad)
@@ -59,12 +63,14 @@ def agendar_cita(especialidad: str, fecha_hora: str, ctx: dict) -> dict:
             "indicacion": "Llegar 15 minutos antes con documento de identidad."}
 
 
+# >> Requiere verificación. Citas activas del afiliado de la sesión.
 @requiere_verificacion
 def mis_citas(ctx: dict) -> dict:
     return {"citas": [{"codigo": k, **{c: v for c, v in x.items() if c != "cedula"}}
                       for k, x in CITAS.items() if x["cedula"] == ctx["cedula"] and x["estado"] == "activa"]}
 
 
+# >> Requiere verificación. Solo cancela citas propias; no revela si existen para otro.
 @requiere_verificacion
 def cancelar_cita(codigo: str, ctx: dict) -> dict:
     cita = CITAS.get(codigo.strip().upper())
@@ -74,6 +80,7 @@ def cancelar_cita(codigo: str, ctx: dict) -> dict:
     return {"cancelada": True, "codigo": codigo.upper()}
 
 
+# >> Requiere verificación. Estado de una autorización médica (AUT-xxxx).
 @requiere_verificacion
 def estado_autorizacion(numero: str, ctx: dict) -> dict:
     aut = AUTORIZACIONES.get(numero.strip().upper())

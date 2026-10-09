@@ -5,6 +5,7 @@ import json
 from llm import llamar
 
 
+# >> Describe una herramienta en JSON Schema; el modelo decide usarla leyendo esta descripción.
 def tool(nombre, descripcion, props=None, requeridos=None):
     """Atajo para describir una herramienta en JSON Schema."""
     return {
@@ -17,6 +18,7 @@ def tool(nombre, descripcion, props=None, requeridos=None):
     }
 
 
+# >> Corre la herramienta que pidió el modelo; inyecta la cédula de la sesión y convierte cualquier error en información.
 def _ejecutar(tc, funciones: dict, contexto: dict) -> dict:
     try:
         args = json.loads(tc.function.arguments or "{}")
@@ -31,6 +33,7 @@ def _ejecutar(tc, funciones: dict, contexto: dict) -> dict:
         return {"error": str(e)}
 
 
+# >> Quita restos internos del modelo (pensamientos, puntos sueltos) antes de mostrar la respuesta.
 def limpiar(texto: str | None) -> str:
     """Quita restos internos del modelo (ej: 'seethought', <thought>...</thought>)."""
     texto = re.sub(r"<thought>.*?</thought>", "", texto or "", flags=re.S)
@@ -39,6 +42,7 @@ def limpiar(texto: str | None) -> str:
     return texto.strip()
 
 
+# >> Loop del agente: pregunta al modelo, ejecuta herramientas y repite hasta responder (máximo 6 pasos).
 def correr_agente(messages: list, tools: list, funciones: dict, contexto: dict | None = None, max_pasos: int = 6):
     """Loop de agente. Modifica `messages`. Devuelve (texto, pasos).
     `contexto` (ej: {"cedula": ...}) viene de la sesión y solo lo ven las herramientas."""

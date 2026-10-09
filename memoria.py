@@ -10,12 +10,14 @@ load_dotenv()
 DB = os.getenv("AGENTE_DB", "agente.db")   # los tests usan otra BD
 
 
+# >> Abre la conexión a SQLite.
 def _con():
     con = sqlite3.connect(DB)
     con.row_factory = sqlite3.Row
     return con
 
 
+# >> Fecha y hora actual en texto.
 def _ahora() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
@@ -40,6 +42,7 @@ with _con() as c:
     """)
 
 
+# >> Devuelve el cliente; si no existe, lo crea.
 def registrar_cliente(cedula: str, nombre: str, telefono: str | None = None) -> dict:
     """Devuelve el cliente; si no existe lo crea."""
     with _con() as c:
@@ -50,6 +53,7 @@ def registrar_cliente(cedula: str, nombre: str, telefono: str | None = None) -> 
         return {"cedula": cedula, "nombre": nombre, "telefono": telefono, "nuevo": True}
 
 
+# >> Guarda cada mensaje del turno con su canal (web, voz, whatsapp).
 def guardar_mensajes(cedula: str, mensajes: list[dict], canal: str = "web"):
     with _con() as c:
         c.executemany(
@@ -58,12 +62,14 @@ def guardar_mensajes(cedula: str, mensajes: list[dict], canal: str = "web"):
         )
 
 
+# >> Trae toda la conversación del cliente, venga del canal que venga: base de la continuidad.
 def cargar_historial(cedula: str) -> list[dict]:
     with _con() as c:
         filas = c.execute("SELECT datos FROM mensajes WHERE cedula = ? ORDER BY id", (cedula,)).fetchall()
     return [json.loads(f["datos"]) for f in filas]
 
 
+# >> Resumen por cliente para el panel: mensajes, última fecha y último canal.
 def listar_clientes() -> list[dict]:
     """Para el panel del supervisor."""
     with _con() as c:
@@ -79,6 +85,7 @@ def listar_clientes() -> list[dict]:
     return [dict(f) for f in filas]
 
 
+# >> Convierte el historial técnico en burbujas legibles para mostrar.
 def a_chat(historial: list[dict]) -> list[tuple]:
     """Convierte el historial del modelo en burbujas (rol, texto, pasos) para mostrar."""
     chat, pasos, llamadas = [], [], {}
@@ -96,6 +103,7 @@ def a_chat(historial: list[dict]) -> list[tuple]:
     return chat
 
 
+# >> Busca un cliente por cédula.
 def obtener_cliente(cedula: str) -> dict | None:
     with _con() as c:
         fila = c.execute("SELECT * FROM clientes WHERE cedula = ?", (cedula,)).fetchone()

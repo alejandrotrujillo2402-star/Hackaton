@@ -23,6 +23,7 @@ with _con() as c:
         estado TEXT DEFAULT 'pendiente', creado TEXT)""")
 
 
+# >> Pasa el caso a un asesor con emoción, urgencia, resumen y pendiente; entrega un ticket ESC.
 def escalar_a_humano(motivo: str, emocion: str, urgencia: int, resumen: str, pendiente: str, ctx: dict) -> dict:
     e = Escalamiento(motivo=motivo, emocion=emocion, urgencia=urgencia, resumen=resumen, pendiente=pendiente)
     ticket = f"ESC-{secrets.randbelow(10**6):06d}"
@@ -33,6 +34,7 @@ def escalar_a_humano(motivo: str, emocion: str, urgencia: int, resumen: str, pen
             "mensaje": "Un asesor humano continuará la atención con el resumen del caso."}
 
 
+# >> Casos pendientes para el panel del supervisor.
 def listar_escalamientos(estado: str = "pendiente") -> list[dict]:
     with _con() as c:
         filas = c.execute("""SELECT e.ticket, e.cedula, c.nombre, e.datos, e.creado FROM escalamientos e

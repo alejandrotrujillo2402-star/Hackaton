@@ -26,6 +26,7 @@ CARPETA = Path(__file__).parent
 
 
 # ---------- Vigilante de llamadas cortadas (hilo en segundo plano) ----------
+# >> Hilo en segundo plano: cada 2 s busca llamadas cortadas y dispara el WhatsApp.
 def _vigilar():
     print("[vigilante] activo: revisando llamadas cada 2 s")
     while True:
@@ -37,6 +38,7 @@ def _vigilar():
         time.sleep(2)
 
 
+# >> Arranca el vigilante cuando inicia la API.
 @asynccontextmanager
 async def lifespan(_app):
     threading.Thread(target=_vigilar, daemon=True).start()
@@ -86,58 +88,69 @@ INSTRUCCIONES_CANAL = {
 
 
 # ---------- Páginas ----------
+# >> La raíz redirige a la llamada de voz.
 @app.get("/", include_in_schema=False)
 def inicio():
     return RedirectResponse("/voz")
 
 
+# >> Sirve la página de llamada de voz.
 @app.get("/voz", response_class=HTMLResponse, include_in_schema=False)
 def pagina_voz():
     return (CARPETA / "voz.html").read_text(encoding="utf-8")
 
 
+# >> Sirve el panel de operación.
 @app.get("/panel", response_class=HTMLResponse, include_in_schema=False)
 def pagina_panel():
     return (CARPETA / "panel.html").read_text(encoding="utf-8")
 
 
+# >> Sirve el WhatsApp simulado.
 @app.get("/whatsapp", response_class=HTMLResponse, include_in_schema=False)
 def pagina_whatsapp():
     return (CARPETA / "whatsapp.html").read_text(encoding="utf-8")
 
 
 # ---------- Endpoints ----------
+# >> Indica si la API está viva y qué dominio cargó.
 @app.get("/health")
 def health():
     return {"estado": "ok", "dominio": dominio.NOMBRE}
 
 
+# >> Registra un cliente (cédula validada).
 @app.post("/clientes", status_code=201)
 def crear_cliente(c: ClienteIn):
     return memoria.registrar_cliente(c.cedula, c.nombre, c.telefono)
 
 
+# >> Lista clientes para el panel.
 @app.get("/clientes")
 def listar_clientes():
     return memoria.listar_clientes()
 
 
+# >> Entrega los indicadores al panel.
 @app.get("/metricas")
 def ver_metricas():
     return metricas.calcular()
 
 
+# >> Recibe la calificación CSAT.
 @app.post("/encuestas", status_code=201)
 def crear_encuesta(e: EncuestaIn):
     metricas.registrar_encuesta(e.cedula, e.canal, e.puntaje)
     return {"ok": True}
 
 
+# >> Lista los casos escalados a humanos.
 @app.get("/escalamientos")
 def escalamientos_pendientes():
     return escalamiento.listar_escalamientos()
 
 
+# >> Conversación completa de un cliente.
 @app.get("/clientes/{cedula}/historial")
 def historial(cedula: str):
     if not memoria.obtener_cliente(cedula):
@@ -145,6 +158,7 @@ def historial(cedula: str):
     return [{"rol": r, "texto": t, "herramientas": p} for r, t, p in memoria.a_chat(memoria.cargar_historial(cedula))]
 
 
+# >> Puerta única de todos los canales: carga historial, corre el agente y guarda el turno con su canal.
 @app.post("/chat", response_model=ChatOut)
 def chat(entrada: ChatIn):
     cliente = memoria.obtener_cliente(entrada.cedula)
@@ -170,6 +184,7 @@ def chat(entrada: ChatIn):
 
 
 # ---------- Llamadas y continuidad ----------
+# >> Registra una llamada nueva.
 @app.post("/llamadas", status_code=201)
 def iniciar_llamada(entrada: LlamadaIn):
     if not memoria.obtener_cliente(entrada.cedula):
@@ -183,6 +198,7 @@ def latido(llamada_id: int):
     return {"ok": True}
 
 
+# >> Cierra la llamada; si se cortó, envía WhatsApp; si colgó, cierra la verificación.
 @app.post("/llamadas/{llamada_id}/finalizar")
 def finalizar_llamada(llamada_id: int, motivo: Literal["colgo", "cortada"] = "colgo"):
     cambio = continuidad.finalizar(llamada_id, motivo)
@@ -193,6 +209,7 @@ def finalizar_llamada(llamada_id: int, motivo: Literal["colgo", "cortada"] = "co
             "aviso_whatsapp": aviso.model_dump() if aviso else None}
 
 
+# >> Mensajes del chat de WhatsApp simulado.
 @app.get("/whatsapp/{cedula}/mensajes")
 def mensajes_whatsapp(cedula: str):
     return continuidad.mensajes_whatsapp(cedula)

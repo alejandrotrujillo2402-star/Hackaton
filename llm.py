@@ -14,6 +14,7 @@ client = OpenAI(base_url=BASE_URL, api_key=TOKEN)
 INTERVALO = 1
 _ultima = 0.0
 
+# >> Respeta una pausa mínima entre llamadas para no superar el límite del proveedor.
 def _turno():
     global _ultima
 
@@ -23,6 +24,7 @@ def _turno():
         time.sleep(falta)
     _ultima = time.time()
 
+# >> Única puerta al modelo: envía la conversación; si hay 429/503 reintenta o cambia al modelo de respaldo.
 def llamar(**kwargs):
     modelo = MODEL
     for intento in range(4):

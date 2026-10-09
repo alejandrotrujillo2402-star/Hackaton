@@ -7,6 +7,7 @@ _cliente = None
 _embedder = None
 
 
+# >> Prepara el modelo de embeddings local y la colección de ChromaDB del dominio.
 def _coleccion(nombre: str):
     global _cliente, _embedder
     if _cliente is None:   # carga perezosa: el modelo solo se carga si se usa
@@ -17,6 +18,7 @@ def _coleccion(nombre: str):
         name=nombre, embedding_function=_embedder, metadata={"hnsw:space": "cosine"})
 
 
+# >> Guarda los documentos como embeddings; corre en el equipo, sin gastar tokens.
 def cargar(nombre: str, documentos: list[tuple[str, str, str]]) -> int:
     """documentos: [(id, titulo, texto), ...]"""
     col = _coleccion(nombre)
@@ -26,8 +28,10 @@ def cargar(nombre: str, documentos: list[tuple[str, str, str]]) -> int:
     return col.count()
 
 
+# >> Fabrica la herramienta buscar_documentos atada a la colección del dominio.
 def buscador(nombre: str):
     """Devuelve la herramienta buscar_documentos atada a una colección."""
+    # >> Busca por significado y descarta lo que supere el umbral 0.75: si no hay nada, el agente dice 'no sé'.
     def buscar_documentos(consulta: str, k: int = 2) -> dict:
         col = _coleccion(nombre)
         if col.count() == 0:

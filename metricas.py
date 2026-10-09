@@ -10,16 +10,19 @@ with _con() as c:
         id INTEGER PRIMARY KEY AUTOINCREMENT, cedula TEXT, canal TEXT, puntaje INTEGER, creado TEXT)""")
 
 
+# >> Guarda la calificación 1 a 5 al terminar la llamada (CSAT).
 def registrar_encuesta(cedula: str, canal: str, puntaje: int):
     with _con() as c:
         c.execute("INSERT INTO encuestas (cedula, canal, puntaje, creado) VALUES (?, ?, ?, ?)",
                   (cedula, canal, puntaje, _ahora()))
 
 
+# >> Calcula un porcentaje con un decimal.
 def _pct(a: int, b: int) -> float | None:
     return round(100 * a / b, 1) if b else None
 
 
+# >> Indicadores desde la BD, sin gastar tokens: resolución autónoma, escalamiento, AHT, CSAT y continuidad.
 def calcular() -> dict:
     with _con() as c:
         mensajes = c.execute("SELECT cedula, canal, rol, datos, creado FROM mensajes ORDER BY id").fetchall()
@@ -42,6 +45,7 @@ def calcular() -> dict:
         if m["rol"] == "tool" and any(k in m["datos"] for k in ("radicado", "ticket")):
             acciones += 1
 
+    # >> Ubica a qué conversación pertenece un escalamiento.
     def _sesion_de(cedula, creado):
         cands = [k for k, ts in conv.items() if k[0] == cedula and ts[0] <= creado]
         return max(cands, key=lambda k: k[1]) if cands else None
